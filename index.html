@@ -39,6 +39,11 @@
 .photo-edit-mode .photo-source-label input{display:block;margin-top:6px;max-width:100%}
 .photo-edit-mode .photo-editor-bar summary{cursor:pointer;color:var(--gold)}
 .photo-edit-mode .photo-editor-bar textarea{display:block;width:100%;margin-top:12px;font:12px ui-monospace,monospace}
+.photo-edit-mode [data-mode][aria-pressed="true"]{background:var(--gold);color:#111}
+/* 390px phone minus the existing wrap's two 22px gutters. Image heights are unchanged. */
+.photo-edit-mode.photo-mobile-preview #products{width:346px;max-width:100%;margin-inline:auto;grid-template-columns:1fr}
+.photo-normal-preview .photo-editor,.photo-normal-preview .photo-editor-bar{display:none}
+.photo-return-editor{position:fixed;bottom:18px;left:18px;z-index:90;padding:12px 16px;background:var(--gold);color:#111;border:1px solid #111;border-radius:9px;cursor:pointer}
 </style>
 </head><body>
 <header class="top"><div class="wrap"><nav><a class="brand" href="#">LIMITLESS <span>EXPRESSIONS</span></a><div class="links"><a href="#shop">Shop</a><a href="#how">How it works</a><a href="#about">About</a></div><div class="mobilebar">CUSTOM MADE</div><button class="cartbtn" id="cartBtn">Cart · <span id="cartCount">0</span></button></nav></div></header>
@@ -54,114 +59,316 @@
 {
   "Custom 3D Printed Hype Chain": {
     "images/product-01-180512bcfc.jpg": {
-      "fit": "fill",
-      "x": 8,
-      "y": 0,
-      "zoom": 0.9
+      "desktop": {
+        "fit": "fill",
+        "x": 8,
+        "y": 0,
+        "zoom": 0.9
+      },
+      "mobile": {
+        "fit": "fill",
+        "x": 8,
+        "y": 0,
+        "zoom": 0.9
+      }
     },
     "images/hype-chain-huss-02.jpg": {
-      "fit": "fill",
-      "x": 0,
-      "y": -10,
-      "zoom": 1
+      "desktop": {
+        "fit": "fill",
+        "x": 0,
+        "y": -10,
+        "zoom": 1
+      },
+      "mobile": {
+        "fit": "fill",
+        "x": 0,
+        "y": -10,
+        "zoom": 1
+      }
     },
     "images/hype-chain-duncanville-01.jpg": {
-      "fit": "fill",
-      "x": 0,
-      "y": 18,
-      "zoom": 1
+      "desktop": {
+        "fit": "fill",
+        "x": 0,
+        "y": 18,
+        "zoom": 1
+      },
+      "mobile": {
+        "fit": "fill",
+        "x": 0,
+        "y": 8,
+        "zoom": 1
+      }
     },
     "images/hype-chain-duncanville-02.jpg": {
-      "fit": "fill",
-      "x": 0,
-      "y": 0,
-      "zoom": 0.85
+      "desktop": {
+        "fit": "fill",
+        "x": 0,
+        "y": 0,
+        "zoom": 0.85
+      },
+      "mobile": {
+        "fit": "fill",
+        "x": 0,
+        "y": 0,
+        "zoom": 0.65
+      }
     }
   },
   "Custom 3D NFC Keychain / Keytag": {
     "images/product-02-9797075631.jpg": {
-      "fit": "fill",
-      "x": 0,
-      "y": -10,
-      "zoom": 2.25
+      "desktop": {
+        "fit": "fill",
+        "x": 0,
+        "y": 14,
+        "zoom": 1.7
+      },
+      "mobile": {
+        "fit": "fill",
+        "x": 0,
+        "y": 8,
+        "zoom": 1.65
+      }
     },
     "images/product-03-ea00994ec0.jpg": {
-      "fit": "fill",
-      "x": 0,
-      "y": 30,
-      "zoom": 1.05
+      "desktop": {
+        "fit": "fill",
+        "x": 0,
+        "y": 34,
+        "zoom": 0.8
+      },
+      "mobile": {
+        "fit": "fill",
+        "x": 0,
+        "y": 34,
+        "zoom": 0.85
+      }
+    },
+    "images/Facebook NFC Printing.jpeg": {
+      "desktop": {
+        "fit": "fill",
+        "x": 16,
+        "y": 54,
+        "zoom": 1.85
+      },
+      "mobile": {
+        "fit": "fill",
+        "x": 18,
+        "y": 60,
+        "zoom": 2.1
+      }
+    },
+    "images/Facebook NFC.jpeg": {
+      "desktop": {
+        "fit": "fill",
+        "x": 0,
+        "y": -4,
+        "zoom": 0.85
+      },
+      "mobile": {
+        "fit": "fill",
+        "x": 0,
+        "y": 0,
+        "zoom": 0.85
+      }
+    },
+    "images/Stats Guy NFC.jpeg": {
+      "desktop": {
+        "fit": "fill",
+        "x": 0,
+        "y": 0,
+        "zoom": 0.85
+      },
+      "mobile": {
+        "fit": "fill",
+        "x": 0,
+        "y": 0,
+        "zoom": 1
+      }
     }
   },
   "3D Printed Google Review NFC Display": {
     "images/product-04-c91ec19ae5.jpg": {
-      "fit": "fit",
-      "x": 2,
-      "y": 0,
-      "zoom": 1.1
+      "desktop": {
+        "fit": "fit",
+        "x": 2,
+        "y": -10,
+        "zoom": 0.9
+      },
+      "mobile": {
+        "fit": "fit",
+        "x": 2,
+        "y": -6,
+        "zoom": 0.95
+      }
     }
   },
   "Custom 3D Printed Name / Desk Plate": {
     "images/product-05-abb2a7e8e7.jpg": {
-      "fit": "fill",
-      "x": 6,
-      "y": 0,
-      "zoom": 1.05
+      "desktop": {
+        "fit": "fill",
+        "x": 6,
+        "y": 0,
+        "zoom": 1.45
+      },
+      "mobile": {
+        "fit": "fill",
+        "x": 6,
+        "y": 0,
+        "zoom": 1.4
+      }
     }
   },
   "Custom 3D Printed Name Light Box": {
     "images/product-06-894763126a.jpg": {
-      "fit": "fit",
-      "x": 20,
-      "y": 0,
-      "zoom": 1.35
+      "desktop": {
+        "fit": "fit",
+        "x": 20,
+        "y": 0,
+        "zoom": 1.35
+      },
+      "mobile": {
+        "fit": "fit",
+        "x": 20,
+        "y": 0,
+        "zoom": 1.35
+      }
+    }
+  },
+  "Custom 3D Printed Neon Name Sign": {
+    "images/product-07-9a6a2b0807.jpg": {
+      "desktop": {
+        "fit": "fit",
+        "x": 0,
+        "y": 0,
+        "zoom": 1
+      },
+      "mobile": {
+        "fit": "fit",
+        "x": 0,
+        "y": 0,
+        "zoom": 1
+      }
     }
   },
   "Custom Business Logo / Sign": {
     "images/Detail Wrapz Backplate.jpeg": {
-      "fit": "fill",
-      "x": -2,
-      "y": 16,
-      "zoom": 1.45
+      "desktop": {
+        "fit": "fill",
+        "x": -2,
+        "y": 16,
+        "zoom": 1.45
+      },
+      "mobile": {
+        "fit": "fill",
+        "x": -2,
+        "y": 16,
+        "zoom": 1.45
+      }
     },
     "images/Detail Wrapz Channels.jpeg": {
-      "fit": "fill",
-      "x": 4,
-      "y": 26,
-      "zoom": 1.5
+      "desktop": {
+        "fit": "fill",
+        "x": 4,
+        "y": 26,
+        "zoom": 1.5
+      },
+      "mobile": {
+        "fit": "fill",
+        "x": 4,
+        "y": 26,
+        "zoom": 1.5
+      }
     },
     "images/Detail Wrapz Logo.jpeg": {
-      "fit": "fill",
-      "x": 0,
-      "y": 0,
-      "zoom": 0.9
+      "desktop": {
+        "fit": "fill",
+        "x": 0,
+        "y": 0,
+        "zoom": 0.9
+      },
+      "mobile": {
+        "fit": "fill",
+        "x": 0,
+        "y": 0,
+        "zoom": 0.85
+      }
     },
     "images/Detail Wrapz Lit up.jpeg": {
-      "fit": "fill",
-      "x": -4,
-      "y": 20,
-      "zoom": 1.65
+      "desktop": {
+        "fit": "fill",
+        "x": -4,
+        "y": 20,
+        "zoom": 1.65
+      },
+      "mobile": {
+        "fit": "fill",
+        "x": -4,
+        "y": 20,
+        "zoom": 1.65
+      }
+    }
+  },
+  "Custom 3D Printed Parts": {
+    "images/Brownie 3D.jpeg": {
+      "desktop": {
+        "fit": "fill",
+        "x": 4,
+        "y": 0,
+        "zoom": 1
+      },
+      "mobile": {
+        "fit": "fill",
+        "x": 4,
+        "y": -4,
+        "zoom": 1
+      }
     }
   },
   "Custom Name / Initial Sign": {
     "images/Celine Sign.jpeg": {
-      "fit": "fill",
-      "x": 4,
-      "y": -4,
-      "zoom": 1.3
+      "desktop": {
+        "fit": "fill",
+        "x": 4,
+        "y": -4,
+        "zoom": 0.95
+      },
+      "mobile": {
+        "fit": "fill",
+        "x": 4,
+        "y": -4,
+        "zoom": 1
+      }
     },
     "images/Gonzales Sign.jpeg": {
-      "fit": "fill",
-      "x": 6,
-      "y": 6,
-      "zoom": 1.1
+      "desktop": {
+        "fit": "fill",
+        "x": 6,
+        "y": 6,
+        "zoom": 0.8
+      },
+      "mobile": {
+        "fit": "fill",
+        "x": 6,
+        "y": 6,
+        "zoom": 0.85
+      }
     }
   },
   "3D Printed Dogs": {
     "images/Brownie 3D.jpeg": {
-      "fit": "fill",
-      "x": 10,
-      "y": -4,
-      "zoom": 1.3
+      "desktop": {
+        "fit": "fill",
+        "x": 10,
+        "y": -4,
+        "zoom": 1
+      },
+      "mobile": {
+        "fit": "fill",
+        "x": 10,
+        "y": -4,
+        "zoom": 1
+      }
     }
   }
 }
@@ -239,20 +446,26 @@ function initPhotoPositioning(){
   const saved=JSON.parse(document.getElementById('photo-position-data').textContent);
   const clean=(v,defaultFit='fill')=>({fit:['fit','fill'].includes(v?.fit)?v.fit:defaultFit,x:Math.max(-100,Math.min(100,Number.isFinite(v?.x)?v.x:0)),y:Math.max(-100,Math.min(100,Number.isFinite(v?.y)?v.y:0)),zoom:Math.max(.05,Math.min(4,Number.isFinite(v?.zoom)?v.zoom:1))});
   const neutral=fit=>({fit,x:0,y:0,zoom:1});
+  // Legacy single-mode data and drafts migrate without losing their framing.
+  const modes=(v,fit)=>{const desktop=clean(v?.desktop||v,fit);return {desktop,mobile:clean(v?.mobile||desktop,fit)}};
+  const clone=v=>({desktop:{...v.desktop},mobile:{...v.mobile}});
+  const mobileQuery=window.matchMedia('(max-width:560px)');
+  let editingMode='desktop';
+  const activeMode=()=>editing?editingMode:(mobileQuery.matches?'mobile':'desktop');
   const records=[];
   const draftKey='limitless-photo-draft:'+location.pathname;
   let savedVersion=JSON.stringify(saved);
   let draft=null,dirty=false;
   if(editing){
-    try{const stored=JSON.parse(localStorage.getItem(draftKey));if(stored?.base===savedVersion)draft=stored.positions}catch(error){/* Storage may be unavailable for local files. */}
+    try{const stored=JSON.parse(localStorage.getItem(draftKey));if(stored?.base===savedVersion||stored?.base===JSON.stringify(Object.fromEntries(Object.entries(saved).map(([name,photos])=>[name,Object.fromEntries(Object.entries(photos).map(([src,v])=>[src,v.desktop||v]))]))))draft=stored.positions}catch(error){/* Storage may be unavailable for local files. */}
   }
   [...grid.children].forEach((card,i)=>{
     const p=products[i],sources=p.images||(p.image?[p.image]:[]);
     p.imagePositions={};
     const photos=[...card.querySelectorAll('.art img')].map((img,j)=>{
       const defaultFit=img.style.objectFit==='contain'?'fit':'fill';
-      const src=sources[j],initial=clean(saved[p.name]?.[src],defaultFit);
-      const value=clean(draft?.[p.name]?.[src]||initial,defaultFit);
+      const src=sources[j],initial=modes(saved[p.name]?.[src],defaultFit);
+      const value=modes(draft?.[p.name]?.[src]||initial,defaultFit);
       p.imagePositions[src]=value;
       const fraction=(text,axis)=>text==='center'?.5:text==='right'||text==='bottom'?1:text==='left'||text==='top'?0:text?.endsWith('%')?parseFloat(text)/100:.5;
       const position=(img.style.objectPosition||'center center').split(/\s+/),origin=(img.style.transformOrigin||'center center').split(/\s+/);
@@ -262,7 +475,7 @@ function initPhotoPositioning(){
       img.style.objectFit='contain';img.style.objectPosition='center center';img.style.transformOrigin='center center';
       img.style.imageOrientation='from-image';
       const apply=()=>{
-        const v=p.imagePositions[src];img.dataset.photoFit=v.fit;
+        const v=p.imagePositions[src][activeMode()];img.dataset.photoFit=v.fit;img.dataset.photoMode=activeMode();
         if(!img.naturalWidth||!img.naturalHeight||!frame.clientWidth||!frame.clientHeight)return;
         const geometry=photoFrameGeometry(frame.clientWidth,frame.clientHeight,img.naturalWidth,img.naturalHeight,v,legacy);
         img.style.transform=`translate(${geometry.x}px,${geometry.y}px) scale(${geometry.scale})`;
@@ -273,13 +486,14 @@ function initPhotoPositioning(){
     });
     if(photos.length)records.push({p,card,photos});
   });
+  mobileQuery.addEventListener('change',()=>records.forEach(r=>r.photos.forEach(photo=>photo.apply())));
   if(!editing)return;
   document.body.classList.add('photo-edit-mode');
   const collect=()=>{
     const result={};
     records.forEach(({p,photos})=>photos.forEach(({src,defaultFit})=>{
-      const value=clean(p.imagePositions[src],defaultFit);
-      if(value.fit!==defaultFit||value.x!==0||value.y!==0||value.zoom!==1)(result[p.name]||(result[p.name]={}))[src]=value;
+      const value=modes(p.imagePositions[src],defaultFit);
+      (result[p.name]||(result[p.name]={}))[src]=value;
     }));
     return result;
   };
@@ -287,15 +501,15 @@ function initPhotoPositioning(){
   function collectInitial(){
     const result={};
     records.forEach(({p,photos})=>photos.forEach(({src,initial:v,defaultFit})=>{
-      if(v.fit!==defaultFit||v.x!==0||v.y!==0||v.zoom!==1)(result[p.name]||(result[p.name]={}))[src]=v;
+      (result[p.name]||(result[p.name]={}))[src]=clone(v);
     }));
     return result;
   }
   const bar=document.createElement('div');bar.className='photo-editor-bar';
-  bar.innerHTML=`<h3>Local photo positioning</h3><p>Use each card’s arrows, dots or swipe to select its photo. Fit entire photo reveals the original image; Fill frame uses a cover crop. Mode changes keep X/Y and zoom. At Fit, X/Y 0% and zoom 1.00x show the whole photo. You can zoom down to 0.05x and move within the same frame. Reset restores the original mode and framing.</p><div class="photo-editor-actions"><button type="button" data-save>Apply to index.html…</button><button type="button" data-download>Download updated index.html</button><button type="button" data-discard>Discard local draft</button><a href="${location.pathname}#shop">Normal preview</a></div><p class="photo-editor-status" role="status" aria-live="polite"></p><label class="photo-source-label">Load existing index.html for download (if requested)<input type="file" accept=".html,text/html" data-source></label><details><summary>Copy/apply fallback and save instructions</summary><p>Apply opens a file picker: choose this project’s index.html and grant save access. Only the photo settings block is updated. If that is unavailable, download the updated file and replace index.html in the project folder; keep the filename index.html and the images folder beside it. Downloads and browser drafts do not change the original file.</p><p>Alternatively, copy the block below and replace the existing script with id="photo-position-data" in index.html. Save the file, then reload normal preview to verify. Public pages never load local drafts or show these controls.</p><button type="button" data-copy>Copy photo settings block</button><textarea readonly aria-label="Photo settings to apply" rows="10"></textarea></details>`;
+  bar.innerHTML=`<h3>Local photo positioning</h3><p>Use each card’s arrows, dots or swipe to select its photo. Fit entire photo reveals the original image; Fill frame uses a cover crop. Mode changes keep X/Y and zoom. At Fit, X/Y 0% and zoom 1.00x show the whole photo. You can zoom down to 0.05x and move within the same frame. Reset restores only this photo’s selected Desktop/Mobile mode to its original fit and neutral framing.</p><div class="photo-editor-actions" aria-label="Editing mode"><strong>Editing:</strong><button type="button" data-mode="desktop" aria-pressed="true">Desktop</button><button type="button" data-mode="mobile" aria-pressed="false">Mobile</button></div><p data-preview-info>Desktop framing in the current window. Public pages use Mobile settings at 560px and below.</p><div class="photo-editor-actions"><button type="button" data-save>Apply to index.html…</button><button type="button" data-download>Download updated index.html</button><button type="button" data-discard>Discard local draft</button><button type="button" data-preview>Normal preview</button></div><p class="photo-editor-status" role="status" aria-live="polite"></p><label class="photo-source-label">Load existing index.html for download (if requested)<input type="file" accept=".html,text/html" data-source></label><details><summary>Copy/apply fallback and save instructions</summary><p>Apply opens a file picker: choose this project’s index.html and grant save access. Only the photo settings block is updated. If that is unavailable, download the updated file and replace index.html in the project folder; keep the filename index.html and the images folder beside it. Downloads and browser drafts do not change the original file.</p><p>Alternatively, copy the block below and replace the existing script with id="photo-position-data" in index.html. Save the file, then reload normal preview to verify. Public pages never load local drafts or show these controls.</p><button type="button" data-copy>Copy photo settings block</button><textarea readonly aria-label="Photo settings to apply" rows="10"></textarea></details>`;
   grid.before(bar);
   const preparedLink=document.createElement('a');preparedLink.hidden=true;preparedLink.textContent='Download prepared copy';preparedLink.download='index.html';
-  bar.querySelector('.photo-editor-actions').appendChild(preparedLink);
+  bar.querySelector('[data-download]').parentElement.appendChild(preparedLink);
   const status=bar.querySelector('[role="status"]'),output=bar.querySelector('textarea');
   const block=()=>'<script id="photo-position-data" type="application/json">\n'+JSON.stringify(collect(),null,2).replace(/</g,'\\u003c')+'\n<'+ '/script>';
   const update=()=>{
@@ -315,25 +529,44 @@ function initPhotoPositioning(){
     card.querySelector('.art').after(panel);
     const refresh=()=>{
       if(track?.clientWidth)current=Math.max(0,Math.min(photos.length-1,Math.round(track.scrollLeft/track.clientWidth)));
-      const {src}=photos[current],v=p.imagePositions[src];
+      const {src}=photos[current],v=p.imagePositions[src][editingMode];
       panel.querySelector('strong').textContent=p.name+' — image '+(current+1)+' of '+photos.length;
       panel.querySelector('.photo-editor-file').textContent=src.replace(/^images\//,'');
-      panel.querySelector('output').textContent=`Fit: ${v.fit==='fit'?'Entire photo':'Fill'} | X: ${v.x.toFixed(0)}% | Y: ${v.y.toFixed(0)}% | Zoom: ${v.zoom.toFixed(2)}x`;
+      panel.querySelector('output').textContent=`Editing: ${editingMode==='mobile'?'Mobile':'Desktop'} | Fit: ${v.fit==='fit'?'Entire photo':'Fill'} | X: ${v.x.toFixed(0)}% | Y: ${v.y.toFixed(0)}% | Zoom: ${v.zoom.toFixed(2)}x`;
       panel.querySelector('[data-action="fit"]').setAttribute('aria-pressed',String(v.fit==='fit'));
       panel.querySelector('[data-action="fill"]').setAttribute('aria-pressed',String(v.fit==='fill'));
     };
     panel.addEventListener('click',e=>{
       const action=e.target.closest('button')?.dataset.action;if(!action)return;
       refresh();
-      const photo=photos[current],v={...p.imagePositions[photo.src]};
+      const photo=photos[current],v={...p.imagePositions[photo.src][editingMode]};
       if(action==='fit'||action==='fill')v.fit=action;
       if(action==='up')v.y-=2;if(action==='down')v.y+=2;if(action==='left')v.x-=2;if(action==='right')v.x+=2;
       if(action==='in')v.zoom=Math.round((v.zoom+.05)*100)/100;if(action==='out')v.zoom=Math.round((v.zoom-.05)*100)/100;
-      p.imagePositions[photo.src]=action==='reset'?neutral(photo.defaultFit):clean(v,photo.defaultFit);
+      p.imagePositions[photo.src][editingMode]=action==='reset'?neutral(photo.defaultFit):clean(v,photo.defaultFit);
       photo.apply();refresh();update();
     });
     track?.addEventListener('scroll',refresh,{passive:true});
     refreshers.push(refresh);refresh();
+  });
+  bar.querySelectorAll('[data-mode]').forEach(button=>button.addEventListener('click',()=>{
+    editingMode=button.dataset.mode;
+    document.body.classList.toggle('photo-mobile-preview',editingMode==='mobile');
+    bar.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===editingMode)));
+    bar.querySelector('[data-preview-info]').textContent=editingMode==='mobile'?'Mobile preview: 390px phone, one column, original image heights. Public pages use Mobile settings at 560px and below.':'Desktop framing in the current window. Public pages use Mobile settings at 560px and below.';
+    records.forEach(r=>r.photos.forEach(photo=>photo.apply()));
+    refreshers.forEach(refresh=>refresh());
+    requestAnimationFrame(()=>refreshers.forEach(refresh=>refresh()));
+  }));
+  const returnButton=document.createElement('button');
+  returnButton.type='button';returnButton.className='photo-return-editor';returnButton.textContent='Return to photo editing';returnButton.hidden=true;
+  document.body.appendChild(returnButton);
+  bar.querySelector('[data-preview]').addEventListener('click',()=>{
+    document.body.classList.add('photo-normal-preview');returnButton.hidden=false;
+  });
+  returnButton.addEventListener('click',()=>{
+    document.body.classList.remove('photo-normal-preview');returnButton.hidden=true;
+    refreshers.forEach(refresh=>refresh());
   });
   let sourceText=null;
   const settingsPattern=/<script id="photo-position-data" type="application\/json">[\s\S]*?<\/script>/;
@@ -352,10 +585,10 @@ function initPhotoPositioning(){
       const updated=updatedSource(text);
       const writer=await handle.createWritable();await writer.write(updated);await writer.close();
       sourceText=updated;dirty=false;baseline=JSON.stringify(collect());savedVersion=baseline;
-      records.forEach(({p,photos})=>photos.forEach(photo=>{photo.initial={...p.imagePositions[photo.src]}}));
+      records.forEach(({p,photos})=>photos.forEach(photo=>{photo.initial=clone(p.imagePositions[photo.src])}));
       try{localStorage.removeItem(draftKey)}catch(error){/* Disk saving succeeded independently of storage. */}
       status.textContent='Saved positioning to the selected index.html. Reload normal preview to verify the saved file.';
-    }catch(error){status.textContent=error.name==='AbortError'?'Save cancelled; your local draft remains.':error.message+' Use the download or copy/apply fallback.'}
+    }catch(error){status.textContent=error.name==='AbortError'?'Save cancelled; your local draft remains.':'Original file was not confirmed saved. '+error.message+' Download updated index.html and replace C:\\Users\\arman\\Documents\\GitHub\\Limitless-Expressions\\index.html.'}
   });
   bar.querySelector('[data-source]').addEventListener('change',async e=>{
     const file=e.target.files[0];if(!file)return;
@@ -376,7 +609,7 @@ function initPhotoPositioning(){
     try{await navigator.clipboard.writeText(block());status.textContent='Copied. Replace the photo-position-data script block in index.html and save the file.'}catch(error){output.focus();output.select();status.textContent='Select and copy the settings block shown here, then replace that block in index.html.'}
   });
   bar.querySelector('[data-discard]').addEventListener('click',()=>{
-    records.forEach(({p,photos})=>photos.forEach(photo=>{p.imagePositions[photo.src]={...photo.initial};photo.apply()}));refreshers.forEach(refresh=>refresh());update();
+    records.forEach(({p,photos})=>photos.forEach(photo=>{p.imagePositions[photo.src]=clone(photo.initial);photo.apply()}));refreshers.forEach(refresh=>refresh());update();
   });
   window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});
   update();
