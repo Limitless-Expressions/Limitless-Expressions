@@ -23,6 +23,22 @@
 .gallery-dot[aria-current="true"]::before{background:var(--gold)}
 .gallery-track:focus-visible,.gallery-arrow:focus-visible,.gallery-dot:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
 @media(hover:none) and (pointer:coarse){.gallery-arrow{display:none}}
+/* Editor styles apply only to a local page opened with ?edit=1. */
+.photo-edit-mode .photo-editor-bar{border:1px solid var(--gold);border-radius:12px;padding:18px;margin:0 0 24px;background:var(--panel)}
+.photo-edit-mode .photo-editor-bar h3{margin:0 0 10px;color:var(--gold)}
+.photo-edit-mode .photo-editor-bar p{font-size:14px;line-height:1.5;color:#c8c2b6}
+.photo-edit-mode .photo-editor-actions,.photo-edit-mode .photo-editor-moves{display:flex;flex-wrap:wrap;gap:8px}
+.photo-edit-mode .photo-editor button,.photo-edit-mode .photo-editor-bar button,.photo-edit-mode .photo-editor-actions a{padding:9px 12px;border:1px solid #5a4c30;border-radius:7px;background:#17130c;color:var(--text);cursor:pointer;font-size:13px}
+.photo-edit-mode .photo-editor button:hover,.photo-edit-mode .photo-editor-bar button:hover{border-color:var(--gold)}
+.photo-edit-mode .photo-editor button:focus-visible,.photo-edit-mode .photo-editor-bar button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.photo-edit-mode .photo-editor{padding:14px;border-bottom:1px solid var(--line);background:#1b170f}
+.photo-edit-mode .photo-editor-photo{display:block;font-size:13px;color:var(--gold);line-height:1.4}
+.photo-edit-mode .photo-editor-file{overflow-wrap:anywhere;font-size:12px;color:#c8c2b6;margin:5px 0}
+.photo-edit-mode .photo-editor-values{display:block;font-size:13px;font-variant-numeric:tabular-nums;margin:8px 0 12px}
+.photo-edit-mode .photo-source-label{display:block;margin:12px 0;font-weight:400}
+.photo-edit-mode .photo-source-label input{display:block;margin-top:6px;max-width:100%}
+.photo-edit-mode .photo-editor-bar summary{cursor:pointer;color:var(--gold)}
+.photo-edit-mode .photo-editor-bar textarea{display:block;width:100%;margin-top:12px;font:12px ui-monospace,monospace}
 </style>
 </head><body>
 <header class="top"><div class="wrap"><nav><a class="brand" href="#">LIMITLESS <span>EXPRESSIONS</span></a><div class="links"><a href="#shop">Shop</a><a href="#how">How it works</a><a href="#about">About</a></div><div class="mobilebar">CUSTOM MADE</div><button class="cartbtn" id="cartBtn">Cart · <span id="cartCount">0</span></button></nav></div></header>
@@ -34,6 +50,9 @@
 </main>
 <footer class="legal"><div class="wrap">Limitless Expressions · A brand of Armanie Distributions Inc. · Storefront prototype — checkout disabled.</div></footer>
 <div class="modal" id="modal"><div class="sheet"><div class="sheethead"><div><div class="eyebrow">CUSTOMIZE</div><h2 id="modalTitle" style="margin:6px 0 0"></h2></div><button class="close" id="close">×</button></div><div id="form" class="formgrid"></div><div class="summary" id="summary"></div><div class="actions"><button class="secondary" id="updateSummary">Update summary</button><button class="primary" id="addCart">Add to test cart</button></div><div class="note">Prototype only — no payment is collected.</div></div></div><div class="toast" id="toast"></div>
+<script id="photo-position-data" type="application/json">
+{}
+</script>
 <script>
 const products=[
 {name:'Custom 3D Printed Hype Chain',tag:'CUSTOM MADE',mock:'HYPE',images:['images/product-01-180512bcfc.jpg','images/hype-chain-huss-02.jpg','images/hype-chain-duncanville-01.jpg','images/hype-chain-duncanville-02.jpg'],imageAlts:['Huss Auto Detailing custom hype chain example'],desc:'Custom 3D Printed Cuban Link Hype Chain, wearable piece for teams, businesses, events, and personal designs.',price:'Pricing TBD',fields:['Upload design / logo','Pendant size','Notes','Quantity']},
@@ -89,4 +108,166 @@ function openProduct(i){active=products[i];document.getElementById('modalTitle')
 function val(name){const el=document.getElementById('f_'+name.replace(/\W+/g,'_'));if(!el)return'';if(el.type==='file')return el.files[0]?.name||'Not uploaded';return el.value||'—'}
 function makeSummary(){if(!active)return;let s=`LIMITLESS EXPRESSIONS — PRODUCTION SUMMARY\n\nProduct: ${active.name}\nStatus: DRAFT / NOT PAID\n\n`;active.fields.forEach(f=>s+=`${f}: ${val(f)}\n`);document.getElementById('summary').textContent=s}
 document.addEventListener('click',e=>{if(e.target.matches('.customize'))openProduct(+e.target.dataset.i)});document.getElementById('close').onclick=()=>document.getElementById('modal').classList.remove('open');document.getElementById('modal').onclick=e=>{if(e.target.id==='modal')e.currentTarget.classList.remove('open')};document.getElementById('updateSummary').onclick=makeSummary;document.getElementById('addCart').onclick=()=>{makeSummary();cart.push({product:active.name});document.getElementById('cartCount').textContent=cart.length;const t=document.getElementById('toast');t.textContent=active.name+' added to test cart';t.style.display='block';setTimeout(()=>t.style.display='none',1800);document.getElementById('modal').classList.remove('open')};document.getElementById('cartBtn').onclick=()=>alert(cart.length?`Test cart: ${cart.map(x=>x.product).join(', ')}\n\nCheckout will be connected later.`:'Your test cart is empty.');
+// Photo framing is saved by product and filename, so gallery order can change safely.
+// The complete source is contained first, then scaled to fit/fill the unchanged frame.
+// Unlike scaling an already-covered image, zooming out can reveal every source pixel.
+function photoFrameGeometry(width,height,naturalWidth,naturalHeight,value,legacy){
+  const contain=Math.min(width/naturalWidth,height/naturalHeight);
+  const ratio=value.fit==='fit'?contain:Math.max(width/naturalWidth,height/naturalHeight);
+  const multiplier=value.zoom*(value.fit==='fill'?legacy.scale:1);
+  const drawWidth=naturalWidth*ratio,drawHeight=naturalHeight*ratio;
+  const left=value.fit==='fit'?(width-drawWidth*multiplier)/2:width*legacy.originX*(1-multiplier)+(width-drawWidth)*legacy.positionX*multiplier;
+  const top=value.fit==='fit'?(height-drawHeight*multiplier)/2:height*legacy.originY*(1-multiplier)+(height-drawHeight)*legacy.positionY*multiplier;
+  return {scale:ratio/contain*multiplier,x:left-(width-drawWidth*multiplier)/2+width*value.x/100,y:top-(height-drawHeight*multiplier)/2+height*value.y/100};
+}
+function initPhotoPositioning(){
+  const localPage=location.protocol==='file:'||['localhost','127.0.0.1','[::1]'].includes(location.hostname);
+  const editing=localPage&&new URLSearchParams(location.search).get('edit')==='1';
+  const saved=JSON.parse(document.getElementById('photo-position-data').textContent);
+  const clean=(v,defaultFit='fill')=>({fit:['fit','fill'].includes(v?.fit)?v.fit:defaultFit,x:Math.max(-100,Math.min(100,Number.isFinite(v?.x)?v.x:0)),y:Math.max(-100,Math.min(100,Number.isFinite(v?.y)?v.y:0)),zoom:Math.max(.05,Math.min(4,Number.isFinite(v?.zoom)?v.zoom:1))});
+  const neutral=fit=>({fit,x:0,y:0,zoom:1});
+  const records=[];
+  const draftKey='limitless-photo-draft:'+location.pathname;
+  let savedVersion=JSON.stringify(saved);
+  let draft=null,dirty=false;
+  if(editing){
+    try{const stored=JSON.parse(localStorage.getItem(draftKey));if(stored?.base===savedVersion)draft=stored.positions}catch(error){/* Storage may be unavailable for local files. */}
+  }
+  [...grid.children].forEach((card,i)=>{
+    const p=products[i],sources=p.images||(p.image?[p.image]:[]);
+    p.imagePositions={};
+    const photos=[...card.querySelectorAll('.art img')].map((img,j)=>{
+      const defaultFit=img.style.objectFit==='contain'?'fit':'fill';
+      const src=sources[j],initial=clean(saved[p.name]?.[src],defaultFit);
+      const value=clean(draft?.[p.name]?.[src]||initial,defaultFit);
+      p.imagePositions[src]=value;
+      const fraction=(text,axis)=>text==='center'?.5:text==='right'||text==='bottom'?1:text==='left'||text==='top'?0:text?.endsWith('%')?parseFloat(text)/100:.5;
+      const position=(img.style.objectPosition||'center center').split(/\s+/),origin=(img.style.transformOrigin||'center center').split(/\s+/);
+      const legacy={scale:Number(img.style.transform.match(/scale\(([\d.]+)\)/)?.[1]||1),positionX:fraction(position[0]),positionY:fraction(position[1]),originX:fraction(origin[0]),originY:fraction(origin[1])};
+      const frame=img.parentElement;
+      frame.style.backgroundColor='#0b0b0b';
+      img.style.objectFit='contain';img.style.objectPosition='center center';img.style.transformOrigin='center center';
+      img.style.imageOrientation='from-image';
+      const apply=()=>{
+        const v=p.imagePositions[src];img.dataset.photoFit=v.fit;
+        if(!img.naturalWidth||!img.naturalHeight||!frame.clientWidth||!frame.clientHeight)return;
+        const geometry=photoFrameGeometry(frame.clientWidth,frame.clientHeight,img.naturalWidth,img.naturalHeight,v,legacy);
+        img.style.transform=`translate(${geometry.x}px,${geometry.y}px) scale(${geometry.scale})`;
+      };
+      img.addEventListener('load',apply);apply();
+      if('ResizeObserver' in window)new ResizeObserver(apply).observe(frame);
+      return {src,img,initial,defaultFit,apply};
+    });
+    if(photos.length)records.push({p,card,photos});
+  });
+  if(!editing)return;
+  document.body.classList.add('photo-edit-mode');
+  const collect=()=>{
+    const result={};
+    records.forEach(({p,photos})=>photos.forEach(({src,defaultFit})=>{
+      const value=clean(p.imagePositions[src],defaultFit);
+      if(value.fit!==defaultFit||value.x!==0||value.y!==0||value.zoom!==1)(result[p.name]||(result[p.name]={}))[src]=value;
+    }));
+    return result;
+  };
+  let baseline=JSON.stringify(collectInitial());
+  function collectInitial(){
+    const result={};
+    records.forEach(({p,photos})=>photos.forEach(({src,initial:v,defaultFit})=>{
+      if(v.fit!==defaultFit||v.x!==0||v.y!==0||v.zoom!==1)(result[p.name]||(result[p.name]={}))[src]=v;
+    }));
+    return result;
+  }
+  const bar=document.createElement('div');bar.className='photo-editor-bar';
+  bar.innerHTML=`<h3>Local photo positioning</h3><p>Use each card’s arrows, dots or swipe to select its photo. Fit entire photo reveals the original image; Fill frame uses a cover crop. Mode changes keep X/Y and zoom. At Fit, X/Y 0% and zoom 1.00x show the whole photo. You can zoom down to 0.05x and move within the same frame. Reset restores the original mode and framing.</p><div class="photo-editor-actions"><button type="button" data-save>Apply to index.html…</button><button type="button" data-download>Download updated index.html</button><button type="button" data-discard>Discard local draft</button><a href="${location.pathname}#shop">Normal preview</a></div><p class="photo-editor-status" role="status" aria-live="polite"></p><label class="photo-source-label">Load existing index.html for download (if requested)<input type="file" accept=".html,text/html" data-source></label><details><summary>Copy/apply fallback and save instructions</summary><p>Apply opens a file picker: choose this project’s index.html and grant save access. Only the photo settings block is updated. If that is unavailable, download the updated file and replace index.html in the project folder; keep the filename index.html and the images folder beside it. Downloads and browser drafts do not change the original file.</p><p>Alternatively, copy the block below and replace the existing script with id="photo-position-data" in index.html. Save the file, then reload normal preview to verify. Public pages never load local drafts or show these controls.</p><button type="button" data-copy>Copy photo settings block</button><textarea readonly aria-label="Photo settings to apply" rows="10"></textarea></details>`;
+  grid.before(bar);
+  const preparedLink=document.createElement('a');preparedLink.hidden=true;preparedLink.textContent='Download prepared copy';preparedLink.download='index.html';
+  bar.querySelector('.photo-editor-actions').appendChild(preparedLink);
+  const status=bar.querySelector('[role="status"]'),output=bar.querySelector('textarea');
+  const block=()=>'<script id="photo-position-data" type="application/json">\n'+JSON.stringify(collect(),null,2).replace(/</g,'\\u003c')+'\n<'+ '/script>';
+  const update=()=>{
+    output.value=block();
+    dirty=JSON.stringify(collect())!==baseline;
+    const draftPositions={};
+    records.forEach(({p,photos})=>photos.forEach(({src})=>{(draftPositions[p.name]||(draftPositions[p.name]={}))[src]={...p.imagePositions[src]}}));
+    try{if(dirty)localStorage.setItem(draftKey,JSON.stringify({base:savedVersion,positions:draftPositions}));else localStorage.removeItem(draftKey)}catch(error){status.textContent='Browser draft storage is unavailable. Apply or download before closing.';return}
+    status.textContent=dirty?'Local draft only — apply or download to make these positions permanent.':'No unsaved positioning changes.';
+  };
+  const refreshers=[];
+  records.forEach(({p,card,photos})=>{
+    let current=0;
+    const track=card.querySelector('.gallery-track');
+    const panel=document.createElement('div');panel.className='photo-editor';
+    panel.innerHTML='<strong class="photo-editor-photo"></strong><div class="photo-editor-file"></div><output class="photo-editor-values"></output><div class="photo-editor-moves"><button type="button" data-action="fit" aria-pressed="false">Fit entire photo</button><button type="button" data-action="fill" aria-pressed="false">Fill frame</button><button type="button" data-action="up">Move up ↑</button><button type="button" data-action="down">Move down ↓</button><button type="button" data-action="left">Move left ←</button><button type="button" data-action="right">Move right →</button><button type="button" data-action="in">Zoom in +</button><button type="button" data-action="out">Zoom out −</button><button type="button" data-action="reset">Reset</button></div>';
+    card.querySelector('.art').after(panel);
+    const refresh=()=>{
+      if(track?.clientWidth)current=Math.max(0,Math.min(photos.length-1,Math.round(track.scrollLeft/track.clientWidth)));
+      const {src}=photos[current],v=p.imagePositions[src];
+      panel.querySelector('strong').textContent=p.name+' — image '+(current+1)+' of '+photos.length;
+      panel.querySelector('.photo-editor-file').textContent=src.replace(/^images\//,'');
+      panel.querySelector('output').textContent=`Fit: ${v.fit==='fit'?'Entire photo':'Fill'} | X: ${v.x.toFixed(0)}% | Y: ${v.y.toFixed(0)}% | Zoom: ${v.zoom.toFixed(2)}x`;
+      panel.querySelector('[data-action="fit"]').setAttribute('aria-pressed',String(v.fit==='fit'));
+      panel.querySelector('[data-action="fill"]').setAttribute('aria-pressed',String(v.fit==='fill'));
+    };
+    panel.addEventListener('click',e=>{
+      const action=e.target.closest('button')?.dataset.action;if(!action)return;
+      refresh();
+      const photo=photos[current],v={...p.imagePositions[photo.src]};
+      if(action==='fit'||action==='fill')v.fit=action;
+      if(action==='up')v.y-=2;if(action==='down')v.y+=2;if(action==='left')v.x-=2;if(action==='right')v.x+=2;
+      if(action==='in')v.zoom=Math.round((v.zoom+.05)*100)/100;if(action==='out')v.zoom=Math.round((v.zoom-.05)*100)/100;
+      p.imagePositions[photo.src]=action==='reset'?neutral(photo.defaultFit):clean(v,photo.defaultFit);
+      photo.apply();refresh();update();
+    });
+    track?.addEventListener('scroll',refresh,{passive:true});
+    refreshers.push(refresh);refresh();
+  });
+  let sourceText=null;
+  const settingsPattern=/<script id="photo-position-data" type="application\/json">[\s\S]*?<\/script>/;
+  function updatedSource(text){
+    if(!text.includes('Limitless Expressions')||!settingsPattern.test(text))throw Error('Choose this project’s updated index.html, which contains photo-position-data.');
+    if(new DOMParser().parseFromString(text,'text/html').querySelectorAll('script#photo-position-data').length!==1)throw Error('The file must contain exactly one photo settings block.');
+    const lineEnding=text.includes('\r\n')?'\r\n':'\n';
+    return text.replace(settingsPattern,()=>block().replace(/\n/g,lineEnding));
+  }
+  bar.querySelector('[data-save]').addEventListener('click',async()=>{
+    if(!window.showOpenFilePicker){status.textContent='Direct file saving is unavailable in this browser. Use Download updated index.html, or copy/apply the settings block.';return}
+    try{
+      const [handle]=await window.showOpenFilePicker({multiple:false,types:[{description:'Existing project index.html',accept:{'text/html':['.html']}}]});
+      if(handle.name!=='index.html')throw Error('Choose the existing file named index.html.');
+      const text=await (await handle.getFile()).text();
+      const updated=updatedSource(text);
+      const writer=await handle.createWritable();await writer.write(updated);await writer.close();
+      sourceText=updated;dirty=false;baseline=JSON.stringify(collect());savedVersion=baseline;
+      records.forEach(({p,photos})=>photos.forEach(photo=>{photo.initial={...p.imagePositions[photo.src]}}));
+      try{localStorage.removeItem(draftKey)}catch(error){/* Disk saving succeeded independently of storage. */}
+      status.textContent='Saved positioning to the selected index.html. Reload normal preview to verify the saved file.';
+    }catch(error){status.textContent=error.name==='AbortError'?'Save cancelled; your local draft remains.':error.message+' Use the download or copy/apply fallback.'}
+  });
+  bar.querySelector('[data-source]').addEventListener('change',async e=>{
+    const file=e.target.files[0];if(!file)return;
+    try{if(file.name!=='index.html')throw Error('Choose the existing index.html.');const text=await file.text();updatedSource(text);sourceText=text;status.textContent='Source loaded. Click Download updated index.html, then replace the project’s existing file.'}catch(error){status.textContent=error.message}
+  });
+  bar.querySelector('[data-download]').addEventListener('click',async()=>{
+    try{
+      if(!sourceText&&location.protocol!=='file:'){
+        const response=await fetch(location.pathname,{cache:'no-store'});if(!response.ok)throw Error('Could not read index.html.');sourceText=await response.text();
+      }
+      if(!sourceText){status.textContent='Load your existing index.html using the file control above, then click Download updated index.html again.';return}
+      if(preparedLink.href)URL.revokeObjectURL(preparedLink.href);
+      preparedLink.href=URL.createObjectURL(new Blob([updatedSource(sourceText)],{type:'text/html;charset=utf-8'}));preparedLink.hidden=false;preparedLink.click();
+      status.textContent='Updated copy prepared. If the download did not start, click Download prepared copy. Replace the project’s index.html with it; the original file has not been changed.';
+    }catch(error){status.textContent=error.message+' Load the existing index.html with the file control and retry.'}
+  });
+  bar.querySelector('[data-copy]').addEventListener('click',async()=>{
+    try{await navigator.clipboard.writeText(block());status.textContent='Copied. Replace the photo-position-data script block in index.html and save the file.'}catch(error){output.focus();output.select();status.textContent='Select and copy the settings block shown here, then replace that block in index.html.'}
+  });
+  bar.querySelector('[data-discard]').addEventListener('click',()=>{
+    records.forEach(({p,photos})=>photos.forEach(photo=>{p.imagePositions[photo.src]={...photo.initial};photo.apply()}));refreshers.forEach(refresh=>refresh());update();
+  });
+  window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});
+  update();
+}
+initPhotoPositioning();
+
 </script></body></html>
