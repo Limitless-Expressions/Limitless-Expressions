@@ -158,7 +158,7 @@ async function requireAdmin(request, env) {
 export async function route(request, env) {
   const url = new URL(request.url), path = url.pathname;
   if (path === '/api/config' && request.method === 'GET') return json({
-    submissionsEnabled:env.ORDER_SUBMISSIONS_ENABLED === 'true', checkoutEnabled:readiness(env),
+    submissionsEnabled:env.ORDER_SUBMISSIONS_ENABLED === 'true' && configured(env.TURNSTILE_SITE_KEY) && configured(env.TURNSTILE_SECRET_KEY), checkoutEnabled:readiness(env),
     turnstileSiteKey:configured(env.TURNSTILE_SITE_KEY) ? env.TURNSTILE_SITE_KEY : null,
     environment:env.ENVIRONMENT
   });
