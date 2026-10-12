@@ -160,7 +160,16 @@ export async function route(request, env) {
   if (path === '/api/config' && request.method === 'GET') return json({
     submissionsEnabled:env.ORDER_SUBMISSIONS_ENABLED === 'true' && configured(env.TURNSTILE_SITE_KEY) && configured(env.TURNSTILE_SECRET_KEY), checkoutEnabled:readiness(env),
     turnstileSiteKey:configured(env.TURNSTILE_SITE_KEY) ? env.TURNSTILE_SITE_KEY : null,
-    environment:env.ENVIRONMENT
+    environment:env.ENVIRONMENT,
+    ...(env.ENVIRONMENT === 'test' ? {setup: {
+      turnstileReady: configured(env.TURNSTILE_SITE_KEY) && configured(env.TURNSTILE_SECRET_KEY),
+      stripeReady: configured(env.STRIPE_SECRET_KEY) && env.STRIPE_SECRET_KEY.startsWith('sk_test_') &&
+        configured(env.STRIPE_WEBHOOK_SECRET) && configured(env.STRIPE_PAYMENT_LINK_ID) &&
+        configured(env.STRIPE_PRICE_ID) && /^https:\\/\\/buy\\.stripe\\.com\\/test_[a-zA-Z0-9]+$/.test(env.STRIPE_PAYMENT_LINK_URL || ''),
+      emailReady: configured(env.RESEND_API_KEY) && configured(env.RESEND_FROM) && env.EMAIL_VERIFIED === 'true',
+      shippingReviewed: env.SHIPPING_REVIEWED === 'true' && !!env.SHIPPING_COUNTRIES,
+      taxReviewed: env.TAX_REVIEWED === 'true'
+    }} : {})
   });
   if (!env.DB || !env.ARTWORK) throw new HttpError(503, 'Order storage is not configured.');
   if (path === '/api/stripe/webhook' && request.method === 'POST') return webhook(request, env);
