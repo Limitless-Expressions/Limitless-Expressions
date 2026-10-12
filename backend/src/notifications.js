@@ -14,6 +14,7 @@ export async function flushNotifications(env) {
     if (!claimed.meta.changes) continue;
     let deliveryStage = 'preparing';
     let providerStatus = null;
+    let providerErrorType = null;
     try {
       const payload = JSON.parse(job.payload);
       const order = job.order_id ? await env.DB.prepare('SELECT * FROM orders WHERE id = ?').bind(job.order_id).first() : null;
@@ -34,7 +35,17 @@ export async function flushNotifications(env) {
         signal:AbortSignal.timeout(15000)
       });
       providerStatus = response.status;
-      if (!response.ok) throw Error('Provider rejected notification');
+      if (!response.ok) {
+        // Resend returns a machine-readable error name. Never store its message or response body.
+        try {
+          const providerError = await response.json();
+          const name = providerError?.name;
+          if (typeof name === 'string' && /^[a-z][a-z0-9_]{0,63}$/.test(name)) providerErrorType = name;
+        } catch {
+          // An unreadable error response still has a useful HTTP status.
+        }
+        throw Error('Provider rejected notification');
+      }
       deliveryStage = 'reading_receipt';
       const sent = await response.json();
       if (!sent.id) throw Error('Missing provider receipt');
@@ -44,7 +55,7 @@ export async function flushNotifications(env) {
     } catch (error) {
       // Persist only operational categories. Never log API keys, payloads, customer data or provider bodies.
       const category = providerStatus !== null && providerStatus >= 400
-        ? 'resend_http_' + providerStatus
+        ? 'resend_http_' + providerStatus + (providerErrorType ? '_' + providerErrorType : '')
         : error?.name === 'TimeoutError' || error?.name === 'AbortError'
           ? 'request_timeout'
           : deliveryStage === 'requesting' ? 'request_failed'
