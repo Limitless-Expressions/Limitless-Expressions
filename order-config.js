@@ -1,7 +1,7 @@
-// Public settings only. Leave disabled until the isolated backend is configured and tested.
-// No URL parameter or browser storage can enable this feature.
+// Staging preview only. This branch is not published to the live GitHub Pages storefront.
+// The backend independently gates order submissions and checkout.
 window.LIMITLESS_ORDER_CONFIG = Object.freeze({
-  enabled: false,
-  apiBase: '', // e.g. https://orders-staging.your-domain.example
+  enabled: true,
+  apiBase: 'https://limitless-expressions-api-staging.argon-ecomm.workers.dev',
   allowLiveCheckout: false
 });
