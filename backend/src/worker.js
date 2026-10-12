@@ -165,7 +165,7 @@ export async function route(request, env) {
       turnstileReady: configured(env.TURNSTILE_SITE_KEY) && configured(env.TURNSTILE_SECRET_KEY),
       stripeReady: configured(env.STRIPE_SECRET_KEY) && env.STRIPE_SECRET_KEY.startsWith('sk_test_') &&
         configured(env.STRIPE_WEBHOOK_SECRET) && configured(env.STRIPE_PAYMENT_LINK_ID) &&
-        configured(env.STRIPE_PRICE_ID) && /^https:\\/\\/buy\\.stripe\\.com\\/test_[a-zA-Z0-9]+$/.test(env.STRIPE_PAYMENT_LINK_URL || ''),
+        configured(env.STRIPE_PRICE_ID) && (env.STRIPE_PAYMENT_LINK_URL || '').startsWith('https://buy.stripe.com/test_'),
       emailReady: configured(env.RESEND_API_KEY) && configured(env.RESEND_FROM) && env.EMAIL_VERIFIED === 'true',
       shippingReviewed: env.SHIPPING_REVIEWED === 'true' && !!env.SHIPPING_COUNTRIES,
       taxReviewed: env.TAX_REVIEWED === 'true'
