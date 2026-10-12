@@ -12,6 +12,8 @@ export async function flushNotifications(env) {
     const claimed = await env.DB.prepare("UPDATE notifications SET state = 'sending', claimed_at = ?, attempts = attempts + 1 WHERE id = ? AND ((state = 'pending' AND next_attempt <= ?) OR (state = 'sending' AND claimed_at < ?))")
       .bind(now, job.id, now, now - 120000).run();
     if (!claimed.meta.changes) continue;
+    let deliveryStage = 'preparing';
+    let providerStatus = null;
     try {
       const payload = JSON.parse(job.payload);
       const order = job.order_id ? await env.DB.prepare('SELECT * FROM orders WHERE id = ?').bind(job.order_id).first() : null;
@@ -25,21 +27,33 @@ export async function flushNotifications(env) {
         ...artwork.map(a => `Private artwork: ${a.filename} (ID ${a.id})`),
         'Artwork and full orders require administrator authentication; see docs/SETUP.md. Never begin production from an unpaid submission.'
       ].filter(Boolean).join('\n\n');
+      deliveryStage = 'requesting';
       const response = await fetch('https://api.resend.com/emails', {
         method:'POST', headers:{Authorization:`Bearer ${env.RESEND_API_KEY}`, 'Content-Type':'application/json', 'Idempotency-Key':job.id},
         body:JSON.stringify({from:env.RESEND_FROM, to:['argon.ecomm@gmail.com'], subject:`${subject} — ${order?.id || payload.sessionId || 'Stripe'}`, text}),
         signal:AbortSignal.timeout(15000)
       });
+      providerStatus = response.status;
       if (!response.ok) throw Error('Provider rejected notification');
+      deliveryStage = 'reading_receipt';
       const sent = await response.json();
       if (!sent.id) throw Error('Missing provider receipt');
+      deliveryStage = 'saving_receipt';
       await env.DB.prepare("UPDATE notifications SET state = 'sent', provider_id = ?, last_error = NULL WHERE id = ? AND claimed_at = ?")
         .bind(sent.id, job.id, now).run();
-    } catch {
-      // Provider details may contain sensitive data. Store only an operational error.
+    } catch (error) {
+      // Persist only operational categories. Never log API keys, payloads, customer data or provider bodies.
+      const category = providerStatus !== null && providerStatus >= 400
+        ? 'resend_http_' + providerStatus
+        : error?.name === 'TimeoutError' || error?.name === 'AbortError'
+          ? 'request_timeout'
+          : deliveryStage === 'requesting' ? 'request_failed'
+          : deliveryStage === 'reading_receipt' ? 'invalid_provider_receipt'
+          : deliveryStage === 'saving_receipt' ? 'receipt_database_error'
+          : 'preparation_failed';
       const delay = Math.min(3600000, 30000 * 2 ** Math.min(job.attempts, 7));
-      await env.DB.prepare("UPDATE notifications SET state = 'pending', next_attempt = ?, last_error = 'Email delivery unconfirmed' WHERE id = ? AND claimed_at = ?")
-        .bind(Date.now() + delay, job.id, now).run();
+      await env.DB.prepare("UPDATE notifications SET state = 'pending', next_attempt = ?, last_error = ? WHERE id = ? AND claimed_at = ?")
+        .bind(Date.now() + delay, category, job.id, now).run();
     }
   }
 }
