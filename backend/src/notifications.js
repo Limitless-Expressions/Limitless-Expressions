@@ -39,8 +39,8 @@ export async function flushNotifications(env) {
         // Resend returns a machine-readable error name. Never store its message or response body.
         try {
           const providerError = await response.json();
-          const name = providerError?.name;
-          if (typeof name === 'string' && /^[a-z][a-z0-9_]{0,63}$/.test(name)) providerErrorType = name;
+          const rawCode = providerError?.name ?? providerError?.code ?? providerError?.error?.code ?? providerError?.error?.type;
+          if (typeof rawCode === 'string' && /^[a-z][a-z0-9_-]{0,63}$/i.test(rawCode)) providerErrorType = rawCode.toLowerCase();
         } catch {
           // An unreadable error response still has a useful HTTP status.
         }
