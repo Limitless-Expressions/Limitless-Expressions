@@ -24,8 +24,18 @@ async function verifyHuman(request, env, token) {
     signal:AbortSignal.timeout(10000)
   });
   const result = await response.json();
-  if (!response.ok || !result.success || result.hostname !== new URL(env.STOREFRONT_ORIGIN).hostname || result.action !== 'order')
+  if (!response.ok || !result.success || result.hostname !== new URL(env.STOREFRONT_ORIGIN).hostname || result.action !== 'order') {
+    // Staging-only diagnostics: report a category, never tokens, secrets, IPs or raw verification responses.
+    if (env.ENVIRONMENT === 'test') {
+      const category = !response.ok ? 'verification_service_error'
+        : !result.success ? 'challenge_rejected'
+        : result.hostname !== new URL(env.STOREFRONT_ORIGIN).hostname ? 'hostname_mismatch'
+        : 'action_mismatch';
+      console.warn('Turnstile staging verification failed:', category);
+      throw new HttpError(400, 'Order verification failed (' + category + ').');
+    }
     throw new HttpError(400, 'Please complete the order verification again.');
+  }
 }
 async function createOrder(request, env) {
   if (env.ORDER_SUBMISSIONS_ENABLED !== 'true') throw new HttpError(503, 'Order submissions are not enabled yet.');
