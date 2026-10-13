@@ -19,8 +19,12 @@ async function verifyHuman(request, env, token) {
   if (env.ENVIRONMENT === 'test' && local && !configured(env.TURNSTILE_SECRET_KEY)) return;
   if (!configured(env.TURNSTILE_SECRET_KEY) || !token) throw new HttpError(503, 'Order protection is not configured.');
   const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({secret:env.TURNSTILE_SECRET_KEY, response:token, remoteip:request.headers.get('CF-Connecting-IP') || undefined}),
+    method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:new URLSearchParams({
+      secret:env.TURNSTILE_SECRET_KEY,
+      response:token,
+      ...(request.headers.get('CF-Connecting-IP') ? {remoteip:request.headers.get('CF-Connecting-IP')} : {})
+    }),
     signal:AbortSignal.timeout(10000)
   });
   const result = await response.json();
