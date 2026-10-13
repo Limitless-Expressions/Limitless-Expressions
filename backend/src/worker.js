@@ -25,16 +25,13 @@ async function verifyHuman(request, env, token) {
   });
   const result = await response.json();
   if (!response.ok || !result.success || result.hostname !== new URL(env.STOREFRONT_ORIGIN).hostname || result.action !== 'order') {
-    // Staging-only diagnostics: report a category, never tokens, secrets, IPs or raw verification responses.
-    if (env.ENVIRONMENT === 'test') {
-      const category = !response.ok ? 'verification_service_error'
-        : !result.success ? 'challenge_rejected'
-        : result.hostname !== new URL(env.STOREFRONT_ORIGIN).hostname ? 'hostname_mismatch'
-        : 'action_mismatch';
-      console.warn('Turnstile staging verification failed:', category);
-      throw new HttpError(400, 'Order verification failed (' + category + ').');
-    }
-    throw new HttpError(400, 'Please complete the order verification again.');
+    // Report only a broad failure category; never expose tokens, secrets, IPs, or raw verification responses.
+    const category = !response.ok ? 'verification_service_error'
+      : !result.success ? 'challenge_rejected'
+      : result.hostname !== new URL(env.STOREFRONT_ORIGIN).hostname ? 'hostname_mismatch'
+      : 'action_mismatch';
+    if (env.ENVIRONMENT === 'test') console.warn('Turnstile staging verification failed:', category);
+    throw new HttpError(400, 'Order verification failed (' + category + ').');
   }
 }
 async function createOrder(request, env) {
