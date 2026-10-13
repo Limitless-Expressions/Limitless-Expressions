@@ -20,7 +20,7 @@ export async function stripeGet(env, path) {
   return response.json();
 }
 export function assertLink(link, lines, env) {
-  const expectedLive = env.ENVIRONMENT === 'live';
+  const expectedLive = ['live','production'].includes(env.ENVIRONMENT);
   if (!link.active || link.id !== env.STRIPE_PAYMENT_LINK_ID || link.url !== env.STRIPE_PAYMENT_LINK_URL || link.livemode !== expectedLive ||
       lines.has_more || lines.data.length !== 1) throw new HttpError(503, 'Payment link configuration does not match this order.');
   const line = lines.data[0];
@@ -45,7 +45,7 @@ export function assertShippingRate(rate, env) {
 export function paymentMismatch(session, lines, order, env) {
   if (!order) return 'Unknown or missing order reference';
   if (!order.checkout_eligible || order.product !== NFC_PRODUCT || order.quantity !== 1) return 'Order is not a single NFC keytag';
-  if (session.client_reference_id !== order.id || session.payment_link !== env.STRIPE_PAYMENT_LINK_ID || session.livemode !== (env.ENVIRONMENT === 'live')) return 'Payment link, reference or environment mismatch';
+  if (session.client_reference_id !== order.id || session.payment_link !== env.STRIPE_PAYMENT_LINK_ID || session.livemode !== (['live','production'].includes(env.ENVIRONMENT))) return 'Payment link, reference or environment mismatch';
   if (session.mode !== 'payment' || session.currency !== 'usd' || session.payment_status !== 'paid' || !session.payment_intent) return 'Payment is not verified as paid';
   if (lines.has_more || lines.data.length !== 1) return 'Unexpected line items';
   const line = lines.data[0];
