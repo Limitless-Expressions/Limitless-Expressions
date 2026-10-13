@@ -10,6 +10,25 @@ export function readiness(env) {
   if (['live','production'].includes(env.ENVIRONMENT)) return env.LIVE_READINESS_APPROVED === 'true' && /^(sk_live_|rk_live_)/.test(env.STRIPE_SECRET_KEY) && env.STRIPE_PAYMENT_LINK_URL === LIVE_LINK;
   return env.STRIPE_SECRET_KEY.startsWith('sk_test_') && /^https:\/\/buy\.stripe\.com\/test_[a-zA-Z0-9]+$/.test(env.STRIPE_PAYMENT_LINK_URL);
 }
+// Temporary, non-sensitive readiness diagnostics: return condition names only, never values.
+export function readinessIssue(env) {
+  const required = ['STRIPE_SECRET_KEY','STRIPE_WEBHOOK_SECRET','STRIPE_PAYMENT_LINK_ID','STRIPE_PRICE_ID','RESEND_API_KEY','RESEND_FROM'];
+  if (!env.DB || !env.ARTWORK) return 'storage_binding';
+  if (required.some(k => !configured(env[k]))) return 'missing_required_configuration';
+  if (!['test','live','production'].includes(env.ENVIRONMENT)) return 'environment';
+  if (env.CHECKOUT_ENABLED !== 'true') return 'checkout_flag';
+  if (['SHIPPING_REVIEWED','TAX_REVIEWED','EMAIL_VERIFIED'].some(k => env[k] !== 'true')) return 'review_flags';
+  if (env.DELIVERY_MODE !== 'shipping' || !env.SHIPPING_COUNTRIES || !['automatic','none'].includes(env.TAX_MODE)) return 'shipping_tax_configuration';
+  if (['live','production'].includes(env.ENVIRONMENT)) {
+    if (env.LIVE_READINESS_APPROVED !== 'true') return 'live_approval';
+    if (!/^(sk_live_|rk_live_)/.test(env.STRIPE_SECRET_KEY)) return 'stripe_key_format';
+    if (env.STRIPE_PAYMENT_LINK_URL !== LIVE_LINK) return 'payment_link_url';
+  } else {
+    if (!env.STRIPE_SECRET_KEY.startsWith('sk_test_')) return 'test_key_format';
+    if (!/^https:\/\/buy\.stripe\.com\/test_[a-zA-Z0-9]+$/.test(env.STRIPE_PAYMENT_LINK_URL)) return 'test_payment_link_url';
+  }
+  return null;
+}
 export async function stripeGet(env, path) {
   if (!configured(env.STRIPE_SECRET_KEY)) throw new HttpError(503, 'Stripe is not configured.');
   const response = await fetch('https://api.stripe.com/v1/' + path, {
