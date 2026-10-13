@@ -1,7 +1,6 @@
-// Staging preview only. This branch is not published to the live GitHub Pages storefront.
-// The backend independently gates order submissions and checkout.
+// Production storefront configuration. Backend independently validates payment readiness.
 window.LIMITLESS_ORDER_CONFIG = Object.freeze({
-  enabled: false,
+  enabled: true,
   apiBase: 'https://limitless-expressions-api.argon-ecomm.workers.dev',
-  allowLiveCheckout: false
+  allowLiveCheckout: true
 });
