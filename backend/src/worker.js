@@ -29,6 +29,14 @@ async function verifyHuman(request, env, token) {
   });
   const result = await response.json();
   if (!response.ok || !result.success || result.hostname !== new URL(env.STOREFRONT_ORIGIN).hostname || result.action !== 'order') {
+    // Safe server-side diagnostic: never log the secret, token, or verification response.
+    console.warn('Turnstile secret metadata', JSON.stringify({
+      length: typeof env.TURNSTILE_SECRET_KEY === 'string' ? env.TURNSTILE_SECRET_KEY.length : null,
+      hasWhitespace: typeof env.TURNSTILE_SECRET_KEY === 'string' ? /\\s/.test(env.TURNSTILE_SECRET_KEY) : null,
+      startsWithExpectedPrefix: typeof env.TURNSTILE_SECRET_KEY === 'string' ? env.TURNSTILE_SECRET_KEY.startsWith('0x4') : null,
+      equalsPublicSiteKey: env.TURNSTILE_SECRET_KEY === env.TURNSTILE_SITE_KEY,
+      verificationHttpStatus: response.status
+    }));
     // Report only a broad failure category; never expose tokens, secrets, IPs, or raw verification responses.
     const safeCodes = new Set(['missing-input-secret','invalid-input-secret','missing-input-response','invalid-input-response','bad-request','timeout-or-duplicate','internal-error']);
     const verificationCodes = Array.isArray(result['error-codes'])
