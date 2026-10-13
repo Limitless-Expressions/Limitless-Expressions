@@ -1,0 +1,10 @@
+{
+  "name": "limitless-expressions-orders",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "dev:backend": "wrangler dev --config backend/wrangler.toml",
+    "db:local": "wrangler d1 migrations apply orders --local --config backend/wrangler.toml"
+  }
+}

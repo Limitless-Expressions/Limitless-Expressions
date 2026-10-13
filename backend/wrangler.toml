@@ -1,0 +1,39 @@
+name = "limitless-orders-staging"
+main = "src/worker.js"
+compatibility_date = "2026-10-01"
+workers_dev = false
+
+[vars]
+ENVIRONMENT = "test"
+ORDER_SUBMISSIONS_ENABLED = "false"
+CHECKOUT_ENABLED = "false"
+LIVE_READINESS_APPROVED = "false"
+SHIPPING_REVIEWED = "false"
+TAX_REVIEWED = "false"
+EMAIL_VERIFIED = "false"
+STOREFRONT_ORIGIN = "http://localhost:8080"
+PUBLIC_API_ORIGIN = "http://localhost:8787"
+NOTIFICATION_EMAIL = "argon.ecomm@gmail.com"
+RESEND_FROM = "Limitless Expressions <orders@example.invalid>"
+STRIPE_PAYMENT_LINK_URL = "https://buy.stripe.com/test_REPLACE_ME"
+STRIPE_PAYMENT_LINK_ID = "plink_REPLACE_ME"
+STRIPE_PRICE_ID = "price_REPLACE_ME"
+STRIPE_API_VERSION = "2025-03-31.basil"
+SHIPPING_COUNTRIES = ""
+SHIPPING_RATE_IDS = ""
+SHIPPING_AMOUNT_CENTS = "0"
+DELIVERY_MODE = "shipping"
+TAX_MODE = "automatic"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "orders"
+database_id = "REPLACE_WITH_STAGING_D1_ID"
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "ARTWORK"
+bucket_name = "limitless-artwork-staging"
+
+[triggers]
+crons = ["*/5 * * * *"]
