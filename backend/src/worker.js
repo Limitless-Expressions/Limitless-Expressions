@@ -1,6 +1,6 @@
 import {HttpError, digest, equalSecrets, readLimited, verifyStripeSignature, configured, json} from './security.js';
 import {validateDetails, validateArtwork, MAX_REQUEST} from './orders.js';
-import {readiness, stripeGet, assertLink, assertShippingRate, paymentMismatch} from './stripe.js';
+import {readiness, readinessIssue, stripeGet, assertLink, assertShippingRate, paymentMismatch} from './stripe.js';
 import {notificationStatement, flushNotifications} from './notifications.js';
 
 const PAYMENT_EVENTS = new Set(['checkout.session.completed','checkout.session.async_payment_succeeded','checkout.session.async_payment_failed']);
@@ -171,6 +171,7 @@ export async function route(request, env) {
     submissionsEnabled:env.ORDER_SUBMISSIONS_ENABLED === 'true' && configured(env.TURNSTILE_SITE_KEY) && configured(env.TURNSTILE_SECRET_KEY), checkoutEnabled:readiness(env),
     turnstileSiteKey:configured(env.TURNSTILE_SITE_KEY) ? env.TURNSTILE_SITE_KEY : null,
     environment:env.ENVIRONMENT,
+    ...(env.ENVIRONMENT === 'production' && !readiness(env) ? {checkoutReadinessIssue:readinessIssue(env)} : {}),
     ...(env.ENVIRONMENT === 'test' ? {setup: {
       turnstileReady: configured(env.TURNSTILE_SITE_KEY) && configured(env.TURNSTILE_SECRET_KEY),
       stripeReady: configured(env.STRIPE_SECRET_KEY) && env.STRIPE_SECRET_KEY.startsWith('sk_test_') &&
