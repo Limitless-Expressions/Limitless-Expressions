@@ -119,7 +119,7 @@ async function webhook(request, env) {
   let event;
   try { event = JSON.parse(raw); } catch { throw new HttpError(400, 'Invalid event.'); }
   if (!PAYMENT_EVENTS.has(event.type)) return json({received:true});
-  if (!/^evt_/.test(event.id || '') || !/^cs_/.test(event.data?.object?.id || '') || event.livemode !== (env.ENVIRONMENT === 'live'))
+  if (!/^evt_/.test(event.id || '') || !/^cs_/.test(event.data?.object?.id || '') || event.livemode !== ['live','production'].includes(env.ENVIRONMENT))
     throw new HttpError(400, 'Unexpected webhook event.');
   if (await env.DB.prepare('SELECT id FROM payment_events WHERE id = ?').bind(event.id).first()) return json({received:true});
   const session = await stripeGet(env, `checkout/sessions/${encodeURIComponent(event.data.object.id)}`);
