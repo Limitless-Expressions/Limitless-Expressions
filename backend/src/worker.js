@@ -30,7 +30,7 @@ async function verifyHuman(request, env, token) {
   const result = await response.json();
   if (!response.ok || !result.success || result.hostname !== new URL(env.STOREFRONT_ORIGIN).hostname || result.action !== 'order') {
     // Report only a broad failure category; never expose tokens, secrets, IPs, or raw verification responses.
-    const category = !response.ok ? 'verification_service_error'
+    const category = !response.ok ? 'verification_service_http_' + response.status
       : !result.success ? 'challenge_rejected'
       : result.hostname !== new URL(env.STOREFRONT_ORIGIN).hostname ? 'hostname_mismatch'
       : 'action_mismatch';
