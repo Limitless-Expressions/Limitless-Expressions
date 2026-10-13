@@ -15,6 +15,7 @@ export async function flushNotifications(env) {
     let deliveryStage = 'preparing';
     let providerStatus = null;
     let providerErrorType = null;
+    let providerErrorDetail = null;
     try {
       const payload = JSON.parse(job.payload);
       const order = job.order_id ? await env.DB.prepare('SELECT * FROM orders WHERE id = ?').bind(job.order_id).first() : null;
@@ -41,6 +42,15 @@ export async function flushNotifications(env) {
           const providerError = await response.json();
           const rawCode = providerError?.name ?? providerError?.code ?? providerError?.error?.code ?? providerError?.error?.type;
           if (typeof rawCode === 'string' && /^[a-z][a-z0-9_-]{0,63}$/i.test(rawCode)) providerErrorType = rawCode.toLowerCase();
+          const rawMessage = providerError?.message ?? providerError?.error?.message;
+          if (typeof rawMessage === 'string') {
+            // Keep a short, redacted diagnostic only; never persist emails, tokens, or raw provider bodies.
+            providerErrorDetail = rawMessage
+              .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[email]')
+              .replace(/\b(re_[A-Za-z0-9_-]{8,}|Bearer\s+\S+)\b/gi, '[redacted]')
+              .replace(/[^a-zA-Z0-9 _.,:;()\[\]'-]/g, '')
+              .trim().slice(0, 120);
+          }
         } catch {
           // An unreadable error response still has a useful HTTP status.
         }
@@ -55,7 +65,7 @@ export async function flushNotifications(env) {
     } catch (error) {
       // Persist only operational categories. Never log API keys, payloads, customer data or provider bodies.
       const category = providerStatus !== null && providerStatus >= 400
-        ? 'resend_http_' + providerStatus + (providerErrorType ? '_' + providerErrorType : '')
+        ? 'resend_http_' + providerStatus + (providerErrorType ? '_' + providerErrorType : '') + (providerErrorDetail ? ': ' + providerErrorDetail : '')
         : error?.name === 'TimeoutError' || error?.name === 'AbortError'
           ? 'request_timeout'
           : deliveryStage === 'requesting' ? 'request_failed'
