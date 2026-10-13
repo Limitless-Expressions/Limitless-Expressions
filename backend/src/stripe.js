@@ -1,13 +1,13 @@
 import {HttpError, configured} from './security.js';
 import {NFC_PRODUCT} from './orders.js';
-export const LIVE_LINK = 'https://buy.stripe.com/6oU8w0eQtaHl7io21r9EI00';
+export const LIVE_LINK = 'https://buy.stripe.com/fZu4gy5fTaHldGM5dD9EI01';
 export function readiness(env) {
   const required = ['STRIPE_SECRET_KEY','STRIPE_WEBHOOK_SECRET','STRIPE_PAYMENT_LINK_ID','STRIPE_PRICE_ID','RESEND_API_KEY','RESEND_FROM'];
   if (!env.DB || !env.ARTWORK || required.some(k => !configured(env[k]))) return false;
-  if (!['test','live'].includes(env.ENVIRONMENT) || env.CHECKOUT_ENABLED !== 'true' ||
+  if (!['test','live','production'].includes(env.ENVIRONMENT) || env.CHECKOUT_ENABLED !== 'true' ||
       ['SHIPPING_REVIEWED','TAX_REVIEWED','EMAIL_VERIFIED'].some(k => env[k] !== 'true')) return false;
   if (env.DELIVERY_MODE !== 'shipping' || !env.SHIPPING_COUNTRIES || !['automatic','none'].includes(env.TAX_MODE)) return false;
-  if (env.ENVIRONMENT === 'live') return env.LIVE_READINESS_APPROVED === 'true' && env.STRIPE_SECRET_KEY.startsWith('sk_live_') && env.STRIPE_PAYMENT_LINK_URL === LIVE_LINK;
+  if (['live','production'].includes(env.ENVIRONMENT)) return env.LIVE_READINESS_APPROVED === 'true' && /^(sk_live_|rk_live_)/.test(env.STRIPE_SECRET_KEY) && env.STRIPE_PAYMENT_LINK_URL === LIVE_LINK;
   return env.STRIPE_SECRET_KEY.startsWith('sk_test_') && /^https:\/\/buy\.stripe\.com\/test_[a-zA-Z0-9]+$/.test(env.STRIPE_PAYMENT_LINK_URL);
 }
 export async function stripeGet(env, path) {
