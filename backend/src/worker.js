@@ -30,8 +30,12 @@ async function verifyHuman(request, env, token) {
   const result = await response.json();
   if (!response.ok || !result.success || result.hostname !== new URL(env.STOREFRONT_ORIGIN).hostname || result.action !== 'order') {
     // Report only a broad failure category; never expose tokens, secrets, IPs, or raw verification responses.
-    const category = !response.ok ? 'verification_service_http_' + response.status
-      : !result.success ? 'challenge_rejected'
+    const safeCodes = new Set(['missing-input-secret','invalid-input-secret','missing-input-response','invalid-input-response','bad-request','timeout-or-duplicate','internal-error']);
+    const verificationCodes = Array.isArray(result['error-codes'])
+      ? result['error-codes'].filter(code => safeCodes.has(code)).slice(0, 3)
+      : [];
+    const category = !response.ok ? 'verification_service_http_' + response.status + (verificationCodes.length ? '_' + verificationCodes.join('_') : '')
+      : !result.success ? 'challenge_rejected' + (verificationCodes.length ? '_' + verificationCodes.join('_') : '')
       : result.hostname !== new URL(env.STOREFRONT_ORIGIN).hostname ? 'hostname_mismatch'
       : 'action_mismatch';
     if (env.ENVIRONMENT === 'test') console.warn('Turnstile staging verification failed:', category);
