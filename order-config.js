@@ -2,6 +2,6 @@
 // The backend independently gates order submissions and checkout.
 window.LIMITLESS_ORDER_CONFIG = Object.freeze({
   enabled: true,
-  apiBase: 'https://limitless-expressions-api-staging.argon-ecomm.workers.dev',
+apiBase: 'https://limitless-expressions-api.argon-ecomm.workers.dev',
   allowLiveCheckout: false
 });
