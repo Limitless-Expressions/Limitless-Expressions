@@ -10,11 +10,11 @@ export function fixedPriceQuote(product, quantity, customization = {}) {
       if (!['2 in', '3 in'].includes(customization['Keytag size'])) return null;
       if (quantity === 1) unitCents = 1500;
       else if (quantity === 5) unitCents = 1000;
-      else if (quantity >= 10) unitCents = 700;
+      else if (quantity >= 10) return null; // Bulk shipping needs a separate approved rate.
       else return null; // No published checkout price for 2–4 or 6–9.
       break;
     case 'Custom 3D Printed Hype Chain':
-      if (quantity !== 1 || customization['Pendant size'] !== '4 in') return null;
+      if (quantity !== 1 || !['4 in', '4"'].includes(customization['Pendant size'])) return null;
       unitCents = 4000;
       break;
     case '3D Printed Google Review NFC Display':
