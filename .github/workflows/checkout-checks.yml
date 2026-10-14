@@ -1,0 +1,25 @@
+name: Checkout code checks
+on:
+  pull_request:
+  push:
+    branches:
+      - feature/fixed-price-checkout
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JavaScript syntax
+        run: |
+          node --check backend/src/worker.js
+          node --check backend/src/stripe.js
+          node --check backend/src/orders.js
+          node --check backend/src/pricing.js
+          node --check order-workflow.js
+      - name: Run tests
+        run: npm test
