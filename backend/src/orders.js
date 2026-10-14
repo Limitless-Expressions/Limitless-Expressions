@@ -1,4 +1,5 @@
 import {catalog} from './catalog.js';
+import {fixedPriceQuote} from './pricing.js';
 import {HttpError, digest} from './security.js';
 
 export const MAX_FILE = 5 * 1024 * 1024;
@@ -32,7 +33,7 @@ export function validateDetails(details) {
   }
   const pricingSnapshot = product.price;
   return {product:product.name, quantity:details.quantity, customerName, customerEmail, customization, pricingSnapshot,
-    eligible:product.name === NFC_PRODUCT && details.quantity === 1};
+    eligible:!!fixedPriceQuote(product.name, details.quantity, customization)};
 }
 export async function validateArtwork(file) {
   if (!file || typeof file.arrayBuffer !== 'function' || file.size < 1 || file.size > MAX_FILE) throw new HttpError(400, 'Each artwork file must be 1 byte to 5 MB.');
