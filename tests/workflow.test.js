@@ -81,11 +81,12 @@ test('all original storefront code, product data, pricing and photo settings are
   assert.equal(catalog.length,11);
   assert.deepEqual(JSON.parse(JSON.stringify(extracted)),catalog);
   const config = readFileSync(new URL('../order-config.js',import.meta.url),'utf8');
-  assert.match(config,/enabled: false/); assert.match(config,/allowLiveCheckout: false/);
+  assert.match(config,/enabled: true/); assert.match(config,/allowLiveCheckout: true/);
 });
-test('only one NFC keytag is eligible; bulk pricing remains intact', () => {
+test('approved small NFC quantities are eligible; other quantities remain quote-only', () => {
   assert.equal(validateDetails(details()).eligible,true);
-  for (const quantity of [2,5,10,25]) assert.equal(validateDetails({...details(),quantity}).eligible,false);
+  assert.equal(validateDetails({...details(),quantity:5}).eligible,true);
+  for (const quantity of [2,10,25]) assert.equal(validateDetails({...details(),quantity}).eligible,false);
   assert.match(catalog[1].price,/5 for \$50/);
   assert.throws(() => validateDetails({...details(),quantity:1.5}));
   assert.throws(() => validateDetails({...details(),customization:{...details().customization,'NFC destination URL':'javascript:alert(1)'}}));
