@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {dynamicPaymentMismatch} from '../src/stripe.js';
+import {dynamicPaymentMismatch, dynamicCheckoutReady, createDynamicSession} from '../src/stripe.js';
 const product = 'Custom Name / Initial Sign';
 const order = {id:'LE-123',product,quantity:1,checkout_eligible:1,customization:'{}',stripe_session_id:null};
 const env = {ENVIRONMENT:'test',TAX_MODE:'automatic'};
@@ -38,4 +38,29 @@ test('reject manipulated product price, quantity, tax, shipping, and references'
   assert.notEqual(dynamicPaymentMismatch(paidSession(),lines,order,env),null);
   const more=paidLines();more.data[0].quantity=2;
   assert.notEqual(dynamicPaymentMismatch(paidSession(),more,order,env),null);
+});
+
+test('dynamic checkout is disabled unless every production prerequisite is explicitly enabled', () => {
+  const ready = {
+    DB:{},ARTWORK:{},ENVIRONMENT:'production',CHECKOUT_ENABLED:'true',
+    DYNAMIC_CHECKOUT_ENABLED:'true',LIVE_READINESS_APPROVED:'true',
+    STRIPE_SECRET_KEY:'sk_live_fixture',STRIPE_WEBHOOK_SECRET:'whsec_fixture',
+    STRIPE_PAYMENT_LINK_ID:'plink_fixture',STRIPE_PRICE_ID:'price_fixture',
+    STRIPE_PAYMENT_LINK_URL:'https://buy.stripe.com/fZu4gy5fTaHldGM5dD9EI01',
+    RESEND_API_KEY:'test',RESEND_FROM:'orders@example.com',
+    SHIPPING_REVIEWED:'true',TAX_REVIEWED:'true',EMAIL_VERIFIED:'true',
+    DELIVERY_MODE:'shipping',SHIPPING_COUNTRIES:'US',TAX_MODE:'automatic',
+    STOREFRONT_ORIGIN:'https://limitlessexpressions3d.com',
+    SHIPPING_RATE_IDS:'shr_fixture',SHIPPING_AMOUNT_CENTS:'600'
+  };
+  assert.equal(dynamicCheckoutReady(ready),true);
+  for (const [field,value] of [
+    ['DYNAMIC_CHECKOUT_ENABLED','false'],
+    ['SHIPPING_AMOUNT_CENTS','0'],
+    ['SHIPPING_RATE_IDS','shr_a,shr_b'],
+    ['STOREFRONT_ORIGIN','http://example.com'],
+    ['LIVE_READINESS_APPROVED','false']
+  ]) {
+    assert.equal(dynamicCheckoutReady({...ready,[field]:value}),false,field);
+  }
 });
