@@ -218,7 +218,7 @@ export async function route(request, env) {
     if (orderMatch[2] && request.method === 'POST') return checkout(request, env, orderMatch[1]);
     if (!orderMatch[2] && request.method === 'GET') {
       const order = await customerOrder(request, env, orderMatch[1]);
-      return json({id:order.id,status:order.status,checkoutEligible:!!order.checkout_eligible,paymentVerified:order.status === 'paid'});
+      return json({id:order.id,status:order.status,checkoutEligible:!!order.checkout_eligible && (dynamicCheckoutReady(env) || (order.product === 'Custom 3D NFC Keychain / Keytag' && order.quantity === 1)),paymentVerified:order.status === 'paid'});
     }
   }
   if (path.startsWith('/api/admin/')) {
