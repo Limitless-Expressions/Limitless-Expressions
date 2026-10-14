@@ -165,7 +165,7 @@ async function webhook(request, env) {
   }
   const lines = await stripeGet(env, `checkout/sessions/${encodeURIComponent(session.id)}/line_items?limit=100`);
   let reason = session.payment_link ? paymentMismatch(session, lines, order, env)
-    : dynamicCheckoutReady(env) ? dynamicPaymentMismatch(session, lines, order, env)
+    : session.metadata?.order_id ? dynamicPaymentMismatch(session, lines, order, env)
     : 'Per-order checkout is disabled';
   if (!readiness(env)) reason = reason || 'Payment received while checkout configuration was disabled';
   if (!reason) {
