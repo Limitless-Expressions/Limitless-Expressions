@@ -13,9 +13,9 @@
   panel.innerHTML = '<div class="formgrid"><div class="field"><label for="orderName">Your name</label><input id="orderName" autocomplete="name" maxlength="120"></div><div class="field"><label for="orderEmail">Email address</label><input id="orderEmail" type="email" autocomplete="email" maxlength="254"></div></div><div id="orderChallenge"></div><p id="orderStatus" role="status" aria-live="polite"></p><button id="orderPay" class="primary" type="button" hidden>Continue to secure payment</button><button id="orderRefresh" class="secondary" type="button" hidden>Check payment status</button>';
   document.getElementById('summary').after(panel);
   const status = panel.querySelector('#orderStatus'), pay = panel.querySelector('#orderPay'), refresh = panel.querySelector('#orderRefresh');
-  button.textContent = 'Submit order details';
+  button.textContent = 'Continue to secure payment';
   button.disabled = true;
-  document.querySelector('#modal .note').textContent = 'Save your customization and artwork before paying. Submission does not confirm payment.';
+  document.querySelector('#modal .note').textContent = 'Your order details and artwork are saved securely before payment. Submission alone does not confirm payment.';
   let backend = null, saved = null, busy = false, token = null, challenge = null, widget = null, fingerprint = null, selected = null;
   const randomToken = () => [...crypto.getRandomValues(new Uint8Array(32))].map(n => n.toString(16).padStart(2,'0')).join('');
   const message = text => { status.textContent = text; };
@@ -35,8 +35,9 @@
       const current = await api(`/api/orders/${saved.id}`, {headers:{Authorization:`Bearer ${saved.token}`}});
       message(current.paymentVerified ? `Payment verified for ${current.id}. Your order is saved.` : current.status === 'review_required' ? `Order ${current.id} needs payment review. Please contact Limitless Expressions.` : `Order ${current.id} is saved. Payment is not yet verified.`);
       refresh.hidden = false;
-      pay.hidden = !current.checkoutEligible || !backend?.checkoutEnabled || current.paymentVerified || current.status === 'review_required' || (backend.environment === 'live' && !config.allowLiveCheckout);
-    } catch (error) { message(error.message); }
+      pay.hidden = !current.checkoutEligible || !backend?.checkoutEnabled || current.paymentVerified || current.status === 'review_required' || (['live','production'].includes(backend.environment) && !config.allowLiveCheckout);
+      return current;
+    } catch (error) { message(error.message); return null; }
   }
   function reset(product) {
     selected = product; token = randomToken(); saved = null; fingerprint = null;
@@ -83,16 +84,21 @@
       form.querySelectorAll('input, select, textarea').forEach(input => { input.disabled = true; });
       panel.querySelectorAll('input').forEach(input => { input.disabled = true; });
       button.textContent = 'Order details saved';
-      await checkStatus();
+      const current = await checkStatus();
+      // Automatically open Stripe only for orders the server confirms are eligible.
+      if (current?.checkoutEligible && backend?.checkoutEnabled && !current.paymentVerified && current.status !== 'review_required' &&
+          (!['live','production'].includes(backend.environment) || config.allowLiveCheckout)) {
+        await startCheckout();
+      }
     } catch (error) {
       message(error.message);
       if (widget !== null && window.turnstile) window.turnstile.reset(widget);
       challenge = null;
     } finally { busy = false; button.disabled = !!saved || !backend?.submissionsEnabled; productButtons.forEach(control => { control.disabled = false; }); }
   };
-  pay.onclick = async () => {
-    if (!saved || busy) return;
-    busy = true; pay.disabled = true;
+  async function startCheckout() {
+    if (!saved) return;
+    pay.disabled = true;
     try {
       const result = await api(`/api/orders/${saved.id}/checkout`, {method:'POST',headers:{Authorization:`Bearer ${saved.token}`}});
       const destination = new URL(result.url);
@@ -101,7 +107,13 @@
           (['live','production'].includes(backend.environment) && !config.allowLiveCheckout)) throw Error('Checkout is disabled.');
       remember(); window.location.assign(destination.href);
     } catch (error) { message(error.message); }
-    finally { busy = false; pay.disabled = false; }
+    finally { pay.disabled = false; }
+  }
+  pay.onclick = async () => {
+    if (busy) return;
+    busy = true;
+    try { await startCheckout(); }
+    finally { busy = false; }
   };
   refresh.onclick = checkStatus;
   document.getElementById('cartBtn').textContent = 'Check saved order';
@@ -130,6 +142,6 @@
       if (saved) checkStatus(); else message('Check your saved order or contact us for verified payment status.');
     }
   }).catch(() => message('Order service is not configured yet. Checkout is disabled.'));
-  new MutationObserver(() => { if (active !== selected && document.getElementById('modal').classList.contains('open')) reset(active); button.textContent = saved ? 'Order details saved' : 'Submit order details'; })
+  new MutationObserver(() => { if (active !== selected && document.getElementById('modal').classList.contains('open')) reset(active); button.textContent = saved ? 'Order details saved' : 'Continue to secure payment'; })
     .observe(form, {childList:true});
 })();
