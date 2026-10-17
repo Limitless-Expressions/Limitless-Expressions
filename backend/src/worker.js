@@ -241,7 +241,7 @@ export async function route(request, env) {
   }
   if (path.startsWith('/api/admin/')) {
     await requireAdmin(request, env);
-    const fulfillment = path.match(/^\\/api\\/admin\\/orders\\/(LE-[a-f0-9-]{36})\\/fulfill$/);
+    const fulfillment = path.match(/^\/api\/admin\/orders\/(LE-[a-f0-9-]{36})\/fulfill$/);
     if (fulfillment && request.method === 'POST') {
       const order = await env.DB.prepare('SELECT id, status, fulfilled_at FROM orders WHERE id = ?').bind(fulfillment[1]).first();
       if (!order) throw new HttpError(404, 'Order not found.');
