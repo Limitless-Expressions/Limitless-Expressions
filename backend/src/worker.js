@@ -189,6 +189,24 @@ async function webhook(request, env) {
   } else await statements(env, event, 'paid', now).run();
   return json({received:true});
 }
+// Artwork retention is measured from manual fulfillment, never upload time.
+const ARTWORK_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
+async function purgeFulfilledArtwork(env) {
+  const cutoff = Date.now() - ARTWORK_RETENTION_MS;
+  const due = (await env.DB.prepare(
+    'SELECT a.id, a.object_key FROM artwork a JOIN orders o ON o.id = a.order_id WHERE o.fulfilled_at IS NOT NULL AND o.fulfilled_at <= ? AND a.deleted_at IS NULL ORDER BY o.fulfilled_at ASC LIMIT 25'
+  ).bind(cutoff).all()).results;
+  for (const item of due) {
+    try {
+      // Delete from R2 first. If the database write fails, a retry is safe.
+      await env.ARTWORK.delete(item.object_key);
+      await env.DB.prepare('UPDATE artwork SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL')
+        .bind(Date.now(), item.id).run();
+    } catch (error) {
+      console.error('Artwork retention cleanup failed', item.id);
+    }
+  }
+}
 async function requireAdmin(request, env) {
   if (!configured(env.ADMIN_TOKEN) || env.ADMIN_TOKEN.length < 32 || !await equalSecrets(request.headers.get('Authorization'), `Bearer ${env.ADMIN_TOKEN}`))
     throw new HttpError(401, 'Administrator authentication required.');
@@ -223,6 +241,17 @@ export async function route(request, env) {
   }
   if (path.startsWith('/api/admin/')) {
     await requireAdmin(request, env);
+    const fulfillment = path.match(/^\\/api\\/admin\\/orders\\/(LE-[a-f0-9-]{36})\\/fulfill$/);
+    if (fulfillment && request.method === 'POST') {
+      const order = await env.DB.prepare('SELECT id, status, fulfilled_at FROM orders WHERE id = ?').bind(fulfillment[1]).first();
+      if (!order) throw new HttpError(404, 'Order not found.');
+      if (order.status !== 'paid') throw new HttpError(409, 'Only paid orders can be fulfilled.');
+      if (order.fulfilled_at !== null && order.fulfilled_at !== undefined) return json({id:order.id,fulfilledAt:order.fulfilled_at,alreadyFulfilled:true});
+      const now = Date.now();
+      await env.DB.prepare("UPDATE orders SET fulfilled_at = ? WHERE id = ? AND status = 'paid' AND fulfilled_at IS NULL").bind(now,order.id).run();
+      const saved = await env.DB.prepare('SELECT fulfilled_at FROM orders WHERE id = ?').bind(order.id).first();
+      return json({id:order.id,fulfilledAt:saved.fulfilled_at,artworkDeleteAfter:saved.fulfilled_at + ARTWORK_RETENTION_MS});
+    }
     if (request.method !== 'GET') throw new HttpError(405, 'Method not allowed.');
     if (path === '/api/admin/notifications') return json((await env.DB.prepare('SELECT id, kind, state, attempts, last_error FROM notifications ORDER BY next_attempt DESC LIMIT 100').all()).results);
     const match = path.match(/^\/api\/admin\/orders\/(LE-[a-f0-9-]{36})$/);
@@ -230,13 +259,13 @@ export async function route(request, env) {
       const order = await env.DB.prepare('SELECT * FROM orders WHERE id = ?').bind(match[1]).first();
       if (!order) throw new HttpError(404, 'Order not found.');
       delete order.access_hash; delete order.request_hash;
-      const artwork = (await env.DB.prepare('SELECT id, filename, content_type, bytes, sha256 FROM artwork WHERE order_id = ?').bind(order.id).all()).results;
+      const artwork = (await env.DB.prepare('SELECT id, filename, content_type, bytes, sha256, deleted_at FROM artwork WHERE order_id = ?').bind(order.id).all()).results;
       return json({order, artwork});
     }
     const file = path.match(/^\/api\/admin\/artwork\/([a-f0-9-]{36})$/);
     if (file) {
       const record = await env.DB.prepare('SELECT * FROM artwork WHERE id = ?').bind(file[1]).first();
-      if (!record) throw new HttpError(404, 'Artwork not found.');
+      if (!record || record.deleted_at !== null) throw new HttpError(404, 'Artwork not found.');
       const object = await env.ARTWORK.get(record.object_key);
       if (!object) throw new HttpError(404, 'Artwork not found.');
       return new Response(object.body, {headers:{'Content-Type':'application/octet-stream','Content-Disposition':`attachment; filename="${record.filename}"`,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Content-Security-Policy':"sandbox; default-src 'none'"}});
@@ -270,6 +299,7 @@ export default {
     ctx.waitUntil((async () => {
       await flushNotifications(env);
       await env.DB.prepare('DELETE FROM rate_limits WHERE expires_at < ?').bind(Date.now()).run();
+      await purgeFulfilledArtwork(env);
     })());
   }
 };
