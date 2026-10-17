@@ -3,6 +3,7 @@ import {validateDetails, validateArtwork, MAX_REQUEST} from './orders.js';
 import {fixedPriceQuote} from './pricing.js';
 import {readiness, readinessIssue, stripeGet, assertLink, assertShippingRate, paymentMismatch, dynamicCheckoutReady, createDynamicSession, dynamicPaymentMismatch} from './stripe.js';
 import {notificationStatement, flushNotifications} from './notifications.js';
+import {adminPage} from './admin.js';
 
 const PAYMENT_EVENTS = new Set(['checkout.session.completed','checkout.session.async_payment_succeeded','checkout.session.async_payment_failed']);
 const statements = (env, event, outcome, now) => env.DB.prepare('INSERT OR IGNORE INTO payment_events (id, session_id, order_reference, outcome, created_at) VALUES (?, ?, ?, ?, ?)')
@@ -213,6 +214,7 @@ async function requireAdmin(request, env) {
 }
 export async function route(request, env) {
   const url = new URL(request.url), path = url.pathname;
+  if (path === '/admin' && request.method === 'GET') return adminPage();
   if (path === '/api/config' && request.method === 'GET') return json({
     submissionsEnabled:env.ORDER_SUBMISSIONS_ENABLED === 'true' && configured(env.TURNSTILE_SITE_KEY) && configured(env.TURNSTILE_SECRET_KEY), checkoutEnabled:readiness(env), dynamicCheckoutEnabled:dynamicCheckoutReady(env),
     turnstileSiteKey:configured(env.TURNSTILE_SITE_KEY) ? env.TURNSTILE_SITE_KEY : null,
@@ -253,6 +255,11 @@ export async function route(request, env) {
       return json({id:order.id,fulfilledAt:saved.fulfilled_at,artworkDeleteAfter:saved.fulfilled_at + ARTWORK_RETENTION_MS});
     }
     if (request.method !== 'GET') throw new HttpError(405, 'Method not allowed.');
+    if (path === '/api/admin/orders') {
+      return json((await env.DB.prepare(
+        'SELECT id, product, quantity, customer_name, status, created_at, fulfilled_at FROM orders ORDER BY created_at DESC LIMIT 100'
+      ).all()).results);
+    }
     if (path === '/api/admin/notifications') return json((await env.DB.prepare('SELECT id, kind, state, attempts, last_error FROM notifications ORDER BY next_attempt DESC LIMIT 100').all()).results);
     const match = path.match(/^\/api\/admin\/orders\/(LE-[a-f0-9-]{36})$/);
     if (match) {
@@ -279,8 +286,8 @@ export default {
     const origin = request.headers.get('Origin');
     let response;
     try {
-      if (!webhookPath && origin && origin !== env.STOREFRONT_ORIGIN) throw new HttpError(403, 'Origin not allowed.');
-      if (!webhookPath && request.method === 'POST' && origin !== env.STOREFRONT_ORIGIN) throw new HttpError(403, 'Origin required.');
+      if (!webhookPath && origin && origin !== env.STOREFRONT_ORIGIN && !(new URL(request.url).pathname.startsWith('/api/admin/') && origin === new URL(request.url).origin)) throw new HttpError(403, 'Origin not allowed.');
+      if (!webhookPath && request.method === 'POST' && origin !== env.STOREFRONT_ORIGIN && !(new URL(request.url).pathname.startsWith('/api/admin/') && origin === new URL(request.url).origin)) throw new HttpError(403, 'Origin required.');
       if (request.method === 'OPTIONS') {
         if (origin !== env.STOREFRONT_ORIGIN) throw new HttpError(403, 'Origin not allowed.');
         response = new Response(null, {status:204,headers:{'Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Authorization, Content-Type','Access-Control-Max-Age':'600'}});
