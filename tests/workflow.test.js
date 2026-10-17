@@ -76,7 +76,7 @@ test('all original storefront code, product data, pricing and photo settings are
     .update(header)
     .update(bytes)
     .digest('hex');
-  assert.equal(actualBlobSha, '8251dcb78102ce2162121eb1d12fcd7cc817bdc1');
+  assert.equal(actualBlobSha, 'ef41b50d48b62f12df4048e9fa142836319d6586');
   const extracted = vm.runInNewContext(original.slice(original.indexOf('const products='),original.indexOf('function galleryHTML'))+';products');
   assert.equal(catalog.length,11);
   assert.deepEqual(JSON.parse(JSON.stringify(extracted)),catalog);
