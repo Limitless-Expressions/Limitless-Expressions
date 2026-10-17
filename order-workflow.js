@@ -96,8 +96,9 @@
     try {
       const result = await api(`/api/orders/${saved.id}/checkout`, {method:'POST',headers:{Authorization:`Bearer ${saved.token}`}});
       const destination = new URL(result.url);
-      if (destination.origin !== 'https://buy.stripe.com' || destination.searchParams.get('client_reference_id') !== saved.id ||
-          (backend.environment === 'live' && !config.allowLiveCheckout)) throw Error('Checkout is disabled.');
+      if (!['https://buy.stripe.com','https://checkout.stripe.com'].includes(destination.origin) ||
+          (destination.origin === 'https://buy.stripe.com' && destination.searchParams.get('client_reference_id') !== saved.id) ||
+          (['live','production'].includes(backend.environment) && !config.allowLiveCheckout)) throw Error('Checkout is disabled.');
       remember(); window.location.assign(destination.href);
     } catch (error) { message(error.message); }
     finally { busy = false; pay.disabled = false; }
