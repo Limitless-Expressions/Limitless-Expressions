@@ -763,7 +763,7 @@ function initNfcProductPage(){
     const q=Number(document.getElementById('f_Quantity')?.value);
     if(q===1){price.textContent='$15.00';note.textContent='Single keytag · Shipping and tax calculated at checkout.'}
     else if(q===5){price.textContent='$50.00';note.textContent='5 keytags · Shipping and tax calculated at checkout.'}
-    else if(Number.isInteger(q)&&q>=10){price.textContent=';note.textContent=q+' keytags at $7 each · Shipping and tax calculated at checkout.'}
+    else if(Number.isInteger(q)&&q>=10){price.textContent=String.fromCharCode(36)+(q*7).toFixed(2);note.textContent=q+' keytags at $7 each · Shipping and tax calculated at checkout.'}
     else {price.textContent='Custom quote';note.textContent='This quantity needs a custom quote before payment.'}
   }
   document.getElementById('form').addEventListener('input',updatePrice);
