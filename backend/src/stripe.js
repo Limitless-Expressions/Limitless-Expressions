@@ -95,7 +95,6 @@ export async function createDynamicSession(env, order, quote) {
   const rateId = env.SHIPPING_RATE_IDS.split(',').filter(Boolean)[0];
   const params = new URLSearchParams({
     mode:'payment',
-    'payment_method_types[0]':'card',
     client_reference_id:order.id,
     customer_email:order.customer_email,
     'metadata[order_id]':order.id,
