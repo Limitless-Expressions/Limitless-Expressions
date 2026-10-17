@@ -44,6 +44,52 @@
 .photo-edit-mode.photo-mobile-preview #products{width:346px;max-width:100%;margin-inline:auto;grid-template-columns:1fr}
 .photo-normal-preview .photo-editor,.photo-normal-preview .photo-editor-bar{display:none}
 .photo-return-editor{position:fixed;bottom:18px;left:18px;z-index:90;padding:12px 16px;background:var(--gold);color:#111;border:1px solid #111;border-radius:9px;cursor:pointer}
+
+/* Dedicated NFC product view: uses the same live order form and Stripe workflow. */
+body.nfc-product-page .hero,body.nfc-product-page #shop,body.nfc-product-page #how,body.nfc-product-page #about{display:none}
+body.nfc-product-page .product-page{display:block}
+.product-page{display:none;padding:30px 0 85px}
+.product-crumbs{color:#b5ac9c;font-size:13px;margin-bottom:26px}
+.product-crumbs a{color:var(--gold);text-decoration:underline;text-underline-offset:4px}
+.product-layout{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);align-items:start;gap:48px}
+.product-photos{position:sticky;top:98px;min-width:0}
+.product-photo-frame{aspect-ratio:1/1;overflow:hidden;border:1px solid #373026;border-radius:20px;background:#13100c}
+.product-photo-frame .gallery{height:100%}
+.product-photo-frame .gallery-slide{background:#0b0b0b}
+.product-photo-frame .gallery-arrow{width:42px;height:42px}
+.product-photo-frame .gallery-dots{bottom:15px}
+.product-photo-hint{margin:12px 0;color:var(--muted);font-size:13px;text-align:center}
+.product-details{min-width:0}
+.product-details .eyebrow{margin-bottom:10px}
+.product-details h1{font-size:clamp(28px,3.4vw,43px);line-height:1.12;letter-spacing:-.035em;margin:0 0 14px}
+.product-description{color:#c7c0b4;font-size:15px;line-height:1.6;margin:0 0 18px}
+.product-price{font-size:31px;font-weight:850;color:var(--gold);margin:0 0 4px}
+.product-price-note{font-size:12px;color:var(--muted);margin:0 0 22px}
+.product-trust{display:flex;gap:16px;flex-wrap:wrap;color:#c6bfb3;font-size:12px;margin:14px 0 26px}
+.product-trust span::before{content:'✓';color:var(--gold);margin-right:7px}
+body.nfc-product-page #modal{display:block;position:static;inset:auto;z-index:auto;overflow:visible;background:transparent;padding:0}
+body.nfc-product-page #modal .sheet{max-width:none;margin:0;padding:0;background:transparent;border:0;border-radius:0;display:flex;flex-direction:column}
+body.nfc-product-page #modal .sheethead{display:none}
+body.nfc-product-page #form{order:1;margin:0;gap:16px}
+body.nfc-product-page #form .field{gap:9px}
+body.nfc-product-page #form input,body.nfc-product-page #form select,body.nfc-product-page #form textarea,
+body.nfc-product-page #modal #orderName,body.nfc-product-page #modal #orderEmail{width:100%;min-height:48px;background:#121212;border:1px solid #484037;border-radius:11px}
+body.nfc-product-page #form input[type=file]{padding:14px;min-height:70px;border:1px dashed #8a7040;background:#1b1710}
+body.nfc-product-page #form label,body.nfc-product-page #modal label{font-size:13px;color:#e4ddcf}
+body.nfc-product-page #form .field.full{grid-column:1/-1}
+body.nfc-product-page #summary,body.nfc-product-page #updateSummary{display:none}
+body.nfc-product-page #modal .actions{order:3;display:block;margin-top:18px}
+body.nfc-product-page #addCart{display:block;width:100%;min-height:55px;font-size:16px;border-radius:12px}
+body.nfc-product-page #modal .sheet>.note{order:4;text-align:center;line-height:1.5}
+body.nfc-product-page #modal .sheet>#summary + .actions{order:3}
+body.nfc-product-page #modal .sheet>div:last-child:not(.note):not(.actions){order:2}
+body.nfc-product-page #orderStatus{color:#c6c0b6;font-size:13px;line-height:1.5}
+body.nfc-product-page #orderPay,body.nfc-product-page #orderRefresh{width:100%;margin-top:10px}
+body.nfc-product-page #orderPay[hidden],body.nfc-product-page #orderRefresh[hidden]{display:none}
+body.nfc-product-page .product-contact-heading{font-size:17px;font-weight:800;margin:24px 0 4px}
+body.nfc-product-page .product-page .product-photo-frame img{max-width:none}
+@media(max-width:850px){.product-layout{gap:24px;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr)}.product-photos{top:86px}}
+@media(max-width:680px){.product-page{padding:18px 0 48px}.product-layout{grid-template-columns:1fr;gap:24px}.product-photos{position:static}.product-photo-frame{aspect-ratio:1/1;max-height:470px}.product-crumbs{margin-bottom:18px}.product-details h1{font-size:31px}.product-price{font-size:28px}}
 </style>
 </head><body>
 <header class="top"><div class="wrap"><nav><a class="brand" href="#">LIMITLESS <span>EXPRESSIONS</span></a><div class="links"><a href="#shop">Shop</a><a href="#how">How it works</a><a href="#about">About</a></div><div class="mobilebar">CUSTOM MADE</div><button class="cartbtn" id="cartBtn">Cart · <span id="cartCount">0</span></button></nav></div></header>
@@ -52,6 +98,7 @@
 <section id="shop"><div class="wrap"><div class="sectionhead"><div><div class="eyebrow">SHOP</div><h2>Think Bigger. It's Limitless.</h2></div><p><span class="small-first">Designed. Printed. Built by us.</span><br>What you see is work we've actually made.</p></div><div class="grid" id="products"></div></div></section>
 <section id="how"><div class="wrap"><div class="sectionhead"><div><div class="eyebrow">HOW IT WORKS</div><h2>From idea to finished piece.</h2></div></div><div class="how"><div class="step"><div class="num">01</div><h3>Pick a product</h3><p>Choose the base product that fits what you want made.</p></div><div class="step"><div class="num">02</div><h3>Customize it</h3><p>Enter names, colors, links, sizes and upload artwork where needed.</p></div><div class="step"><div class="num">03</div><h3>We build it</h3><p>Your selections become a production summary so nothing gets lost between order and fabrication.</p></div><div class="step"><div class="num">04</div><h3>Ship or pickup</h3><p>Final delivery options will be connected when checkout goes live.</p></div></div><div class="cta" style="justify-content:center;margin-top:34px"><a class="primary" href="#shop">Start customizing</a></div></div></section>
 <section id="about"><div class="wrap"><div class="sectionhead"><div><div class="eyebrow">LIMITLESS EXPRESSIONS</div><h2>Helping you bring your idea to life.</h2></div><p>Each item is made to order. Customize your product and submit your details to see whether secure checkout is available or a custom quote is required.</p></div></div></section>
+<section class="product-page" id="nfcProductPage" aria-label="NFC keychain product"><div class="wrap"><div class="product-crumbs"><a href="./#shop">Shop</a> &nbsp; / &nbsp; NFC Keychain / Keytag</div><div class="product-layout"><div class="product-photos"><div class="product-photo-frame" id="nfcProductPhotos"></div><p class="product-photo-hint">Swipe or use the arrows to view real customer examples</p></div><div class="product-details"><div class="eyebrow">CUSTOM MADE · NFC ENABLED</div><h1>Custom 3D NFC Keychain / Keytag</h1><p class="product-description">Make your brand easy to share. Upload your logo, choose your size, and set the link people open when they tap your keytag with a compatible phone.</p><div class="product-price" id="nfcProductPrice">$15.00</div><p class="product-price-note" id="nfcProductPriceNote">1 for $15 · 5 for $50 · 10+ for $7 each. Shipping and tax calculated at checkout.</p><div class="product-trust"><span>Made to order</span><span>Custom artwork</span><span>Secure Stripe checkout</span></div><div id="nfcProductFormMount"></div></div></div></div></section>
 </main>
 <footer class="legal"><div class="wrap">Limitless Expressions · A brand of Armanie Distributions Inc. · Custom products made to order.</div></footer>
 <div class="modal" id="modal"><div class="sheet"><div class="sheethead"><div><div class="eyebrow">CUSTOMIZE</div><h2 id="modalTitle" style="margin:6px 0 0"></h2></div><button class="close" id="close">×</button></div><div id="form" class="formgrid"></div><div class="summary" id="summary"></div><div class="actions"><button class="secondary" id="updateSummary">Update summary</button><button class="primary" id="addCart">Add to test cart</button></div><div class="note">Prototype only — no payment is collected.</div></div></div><div class="toast" id="toast"></div>
@@ -489,7 +536,7 @@ function initGallery(gallery){
 }
 
 const grid=document.getElementById('products');let active=null,cart=[];
-products.forEach((p,i)=>{const c=document.createElement('article');c.className='card';c.innerHTML=`<div class="art" style="${p.imageType==='deskplate'?'height:235px':p.imageType==='review'?'height:410px;min-height:410px;max-height:410px;background:#0b0b0b':''}"><span class="tag">${p.tag}</span>${p.images?.length?galleryHTML(p):p.image?`<img src="${p.image}" alt="${p.imageType==='review'?'Google Review NFC display being 3D printed':(p.imageType==='lightbox'||p.imageType==='neon')?'ArGon custom illuminated name light box':p.imageType==='deskplate'?'Custom Andrea MSN 2026 Alumni desk plate':'Huss Auto Detailing custom hype chain example'}" style="width:100%;height:100%;object-fit:${(p.imageType==='lightbox'||p.imageType==='neon'||p.imageType==='review')?'contain':'cover'};object-position:${p.imageType==='deskplate'?'center 56%':'center center'};display:block;background:#0b0b0b">`:`<div class="mock">${p.mock}</div>`}</div><div class="cardbody"><h3>${p.name}</h3><p>${p.desc}</p><div class="cardfoot"><span class="price">${p.price}</span>${p.comingSoon?'':`<button class="customize" data-i="${i}">CUSTOMIZE →</button>`}</div></div>`;grid.appendChild(c)});
+products.forEach((p,i)=>{const c=document.createElement('article');c.className='card';c.innerHTML=`<div class="art" style="${p.imageType==='deskplate'?'height:235px':p.imageType==='review'?'height:410px;min-height:410px;max-height:410px;background:#0b0b0b':''}"><span class="tag">${p.tag}</span>${p.images?.length?galleryHTML(p):p.image?`<img src="${p.image}" alt="${p.imageType==='review'?'Google Review NFC display being 3D printed':(p.imageType==='lightbox'||p.imageType==='neon')?'ArGon custom illuminated name light box':p.imageType==='deskplate'?'Custom Andrea MSN 2026 Alumni desk plate':'Huss Auto Detailing custom hype chain example'}" style="width:100%;height:100%;object-fit:${(p.imageType==='lightbox'||p.imageType==='neon'||p.imageType==='review')?'contain':'cover'};object-position:${p.imageType==='deskplate'?'center 56%':'center center'};display:block;background:#0b0b0b">`:`<div class="mock">${p.mock}</div>`}</div><div class="cardbody"><h3>${p.name}</h3><p>${p.desc}</p><div class="cardfoot"><span class="price">${p.price}</span>${p.comingSoon?'':p.name==='Custom 3D NFC Keychain / Keytag'?'<a class="customize" href="?product=nfc-keytag">CUSTOMIZE →</a>':`<button class="customize" data-i="${i}">CUSTOMIZE →</button>`}</div></div>`;grid.appendChild(c)});
 grid.querySelectorAll('.gallery').forEach(initGallery);
 function fieldHTML(name){if(name==='Upload photo / reference')return `<div class="field full"><label>Upload photo / reference</label><input id="f_Upload_photo_reference" type="file" accept="image/*,.pdf"><div style="margin-top:9px;color:#c9c1b2;font-size:13px;line-height:1.45">Upload a clear photo, sketch, drawing, or reference for the part you need.</div></div>`;if(name==='Specifications')return `<div class="field full"><label>Specs / measurements</label><textarea id="f_Specifications" placeholder="Tell us the dimensions, what the part needs to fit, what it needs to do, material or strength needs, and any other important measurements or details."></textarea></div>`;if(name==='Name / text (optional if uploading logo)')return `<div class="field"><label>Name / text <span style="color:#8f897e;font-weight:500">(optional if uploading logo)</span></label><input id="f_Name_text_optional_if_uploading_logo_" placeholder="Enter name / text"></div>`;if(name==='Upload logo / design')return `<div class="field full"><label>Upload logo / design</label><input id="f_Upload_logo_design" type="file" accept="image/*,.pdf,.svg"><div style="margin-top:9px;color:#c9c1b2;font-size:13px;line-height:1.45">Upload your logo or design if you want a logo sign instead of a name.</div></div>`;if(name==='Neon color')return `<div class="field"><label>Neon color</label><select id="f_Neon_color"><option value="White">White</option><option value="Red">Red</option><option value="Yellow">Yellow</option><option value="Green">Green</option><option value="Blue">Blue</option><option value="Orange">Orange</option><option value="Purple">Purple</option></select></div>`;if(name==='Body color')return `<div class="field"><label>Body color</label><select id="f_Body_color"><option value="Transparent">Transparent</option><option value="Black">Black</option><option value="White">White</option></select></div>`;if(name==='LED color')return `<div class="field"><label>LED color</label><select id="f_LED_color" style="width:100%;background:#090909;color:#f4efe5;border:1px solid #39342b;border-radius:10px;padding:13px 12px;font:inherit"><option value="Cool white">Cool white</option><option value="Warm white">Warm white</option></select></div>`;if(name==='Neon sign size')return `<div class="field full"><label>Size</label><select id="f_Neon_sign_size" style="width:100%;background:#090909;color:#f4efe5;border:1px solid #39342b;border-radius:10px;padding:13px 12px;font:inherit"><option value="10 in">${active.name==='Custom Business Logo / Sign'?'10" — $150':'10" (Only 3-4 letter names) — Quote required'}</option><option value="20 in">${active.name==='Custom 3D Printed Neon Name Sign'?'20" — $250':'20" — Quote required'}</option><option value="30 in">30" — Quote required</option>${active.name==='Custom Business Logo / Sign'?'<option value="45 in">45" Neon Acrylic or ACM UV Printed Logo — estimated $750–$1,000 (not a fixed final price)</option>':''}<option value="Larger / Custom Quote">Larger / Custom Quote</option></select><div style="margin-top:9px;color:#c9c1b2;font-size:13px;line-height:1.45"><strong style="color:#e6b94f">Larger size = higher price.</strong> Signs over 20 in may be produced in reinforced sections or may require an alternative backing/material depending on the design. We’ll contact you if your design would be better suited for another construction method.</div></div>`;const id='f_'+name.replace(/\W+/g,'_');if(name==='Quantity')return `<div class="field full"><label>Quantity</label><input id="${id}" type="number" min="1" step="1" value="1" inputmode="numeric"></div>`;if(name==='Pendant size')return `<div class="field full"><label>Pendant size</label><select id="${id}" style="width:100%;background:#090909;color:#f4efe5;border:1px solid #39342b;border-radius:10px;padding:13px 12px;font:inherit"><option value="">Select pendant size</option><option value="4 in">4 in</option><option value="5 in">5 in</option></select></div>`;if(name==='Upload design / logo')return `<div class="field full"><label>Upload design / logo</label><input id="${id}" type="file" accept="image/*,.pdf,.svg"><div style="margin-top:9px;color:#c9c1b2;font-size:13px;line-height:1.45">Upload your logo, artwork, or reference image.</div></div>`;if(name==='Logo upload')return `<div class="field full"><label>Upload design / logo</label><input id="${id}" type="file" accept="image/*,.pdf,.svg"><div style="margin-top:9px;color:#c9c1b2;font-size:13px;line-height:1.45">Upload your logo, artwork, or reference image. <strong style="color:#e6b94f">Maximum 4 colors.</strong></div></div>`;if(name==='Keytag size')return `<div class="field full"><label>Keytag size</label><select id="${id}" style="width:100%;background:#090909;color:#f4efe5;border:1px solid #39342b;border-radius:10px;padding:13px 12px;font:inherit"><option value="2 in">2 in</option><option value="3 in">3 in</option></select><div style="margin-top:9px;color:#c9c1b2;font-size:13px;line-height:1.45">Logos with a lot of fine detail may need to be printed at the larger size so all details can be reproduced clearly.</div></div>`;if(name==='NFC destination URL')return `<div class="field full"><label>NFC destination URL</label><input id="${id}" placeholder="Paste Instagram, Facebook, TikTok, YouTube, website, or other link"></div>`;if(name==='Google review link')return `<div class="field"><label>Google Review Link / Google Maps Business Location</label><input id="${id}" placeholder="Enter ${name.toLowerCase()}"></div>`;if(name==='Notes'||name.includes('location'))return `<div class="field full"><label>${name}</label><textarea id="${id}" placeholder="Optional details"></textarea></div>`;if(name.toLowerCase().includes('upload'))return `<div class="field full"><label>${name}</label><input id="${id}" type="file" accept="image/*,.pdf,.svg"></div>`;if(name.includes('color'))return `<div class="field"><label>${name}</label><input id="${id}" placeholder="e.g. Black, white, gold"></div>`;return `<div class="field"><label>${name}</label><input id="${id}" placeholder="Enter ${name.toLowerCase()}"></div>`}
 function openProduct(i){active=products[i];document.getElementById('modalTitle').textContent=active.name;let html=active.fields.map(fieldHTML).join('');if(active.name==='Custom 3D Printed Name Light Box')html+=`<div class="field full"><div style="border:1px solid #39342b;border-radius:10px;padding:13px 14px;color:#c9c1b2;font-size:13px;line-height:1.45"><strong style="color:#e6b94f">Standard size:</strong> approximately 10 in wide (slightly under 10 in due to our print-bed size).</div></div>`;if(active.name==='Custom 3D Printed Neon Name Sign'||active.name==='Custom Business Logo / Sign')html+=`<div class="field full"><div style="border:1px solid #5a4722;background:#151108;border-radius:10px;padding:13px 14px;color:#e7dfd0;font-size:13px;line-height:1.45"><strong style="color:#e6b94f">INDOOR SIGN ONLY</strong> — This neon sign is intended for indoor use.</div></div>`;html+='<div class="field full"><label>Pricing</label><div id="customizationPricing" style="white-space:pre-line;color:#e6b94f;font-size:14px;line-height:1.5"></div></div>';document.getElementById('form').innerHTML=html;const upload=document.getElementById('form').querySelector('input[type="file"]');if(upload){const qualityNote=document.createElement('div');qualityNote.className='upload-quality-note';qualityNote.style.cssText='margin-top:9px;color:#c9c1b2;font-size:13px;line-height:1.45';qualityNote.textContent='Try to upload the best quality JPEG or SVG of your logo.';upload.parentElement.appendChild(qualityNote);}document.getElementById('modal').classList.add('open');makeSummary()}
@@ -696,5 +743,49 @@ function initPhotoPositioning(){
   update();
 }
 initPhotoPositioning();
+
+function initNfcProductPage(){
+  if(new URLSearchParams(location.search).get('product')!=='nfc-keytag')return;
+  document.body.classList.add('nfc-product-page');
+  document.title='Custom 3D NFC Keychain / Keytag | Limitless Expressions';
+  const card=grid.children[1],gallery=card.querySelector('.gallery');
+  if(gallery)document.getElementById('nfcProductPhotos').appendChild(gallery);
+  document.getElementById('nfcProductFormMount').appendChild(document.getElementById('modal'));
+  const modal=document.getElementById('modal');
+  modal.onclick=null;
+  openProduct(1);
+  document.getElementById('close').hidden=true;
+  const pricingField=document.getElementById('customizationPricing')?.closest('.field');
+  if(pricingField)pricingField.hidden=true;
+  const price=document.getElementById('nfcProductPrice');
+  const note=document.getElementById('nfcProductPriceNote');
+  function updatePrice(){
+    const q=Number(document.getElementById('f_Quantity')?.value);
+    if(q===1){price.textContent='$15.00';note.textContent='Single keytag · Shipping and tax calculated at checkout.'}
+    else if(q===5){price.textContent='$50.00';note.textContent='5 keytags · Shipping and tax calculated at checkout.'}
+    else if(Number.isInteger(q)&&q>=10){price.textContent='
+
+</script><script src="order-config.js"></script><script src="order-workflow.js"></script></body></html>
++(q*7).toFixed(2);note.textContent=q+' keytags at $7 each · Shipping and tax calculated at checkout.'}
+    else {price.textContent='Custom quote';note.textContent='This quantity needs a custom quote before payment.'}
+  }
+  document.getElementById('form').addEventListener('input',updatePrice);
+  document.getElementById('form').addEventListener('change',updatePrice);
+  updatePrice();
+  document.getElementById('addCart').textContent='Continue to secure payment';
+  const contact=document.createElement('div');contact.className='product-contact-heading';contact.textContent='Your contact details';
+  const panel=document.getElementById('summary').nextElementSibling;
+  // The order workflow adds its contact fields after this script; observe and label them.
+  const observer=new MutationObserver(()=>{
+    const orderName=document.getElementById('orderName');
+    if(orderName&&!contact.isConnected){
+      orderName.closest('.formgrid')?.before(contact);
+      observer.disconnect();
+    }
+  });
+  observer.observe(document.getElementById('modal'),{childList:true,subtree:true});
+}
+
+initNfcProductPage();
 
 </script><script src="order-config.js"></script><script src="order-workflow.js"></script></body></html>
