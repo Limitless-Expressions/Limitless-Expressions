@@ -786,26 +786,3 @@ function initNfcProductPage(){
 initNfcProductPage();
 
 </script><script src="order-config.js"></script><script src="order-workflow.js"></script></body></html>
-+(q*7).toFixed(2);note.textContent=q+' keytags at $7 each · Shipping and tax calculated at checkout.'}
-    else {price.textContent='Custom quote';note.textContent='This quantity needs a custom quote before payment.'}
-  }
-  document.getElementById('form').addEventListener('input',updatePrice);
-  document.getElementById('form').addEventListener('change',updatePrice);
-  updatePrice();
-  document.getElementById('addCart').textContent='Continue to secure payment';
-  const contact=document.createElement('div');contact.className='product-contact-heading';contact.textContent='Your contact details';
-  const panel=document.getElementById('summary').nextElementSibling;
-  // The order workflow adds its contact fields after this script; observe and label them.
-  const observer=new MutationObserver(()=>{
-    const orderName=document.getElementById('orderName');
-    if(orderName&&!contact.isConnected){
-      orderName.closest('.formgrid')?.before(contact);
-      observer.disconnect();
-    }
-  });
-  observer.observe(document.getElementById('modal'),{childList:true,subtree:true});
-}
-
-initNfcProductPage();
-
-</script><script src="order-config.js"></script><script src="order-workflow.js"></script></body></html>
