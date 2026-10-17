@@ -1,6 +1,7 @@
 import {HttpError, digest, equalSecrets, readLimited, verifyStripeSignature, configured, json} from './security.js';
 import {validateDetails, validateArtwork, MAX_REQUEST} from './orders.js';
-import {readiness, readinessIssue, stripeGet, assertLink, assertShippingRate, paymentMismatch} from './stripe.js';
+import {fixedPriceQuote} from './pricing.js';
+import {readiness, readinessIssue, stripeGet, assertLink, assertShippingRate, paymentMismatch, dynamicCheckoutReady, createDynamicSession, dynamicPaymentMismatch} from './stripe.js';
 import {notificationStatement, flushNotifications} from './notifications.js';
 
 const PAYMENT_EVENTS = new Set(['checkout.session.completed','checkout.session.async_payment_succeeded','checkout.session.async_payment_failed']);
@@ -111,7 +112,19 @@ async function customerOrder(request, env, id) {
 async function checkout(request, env, id) {
   const order = await customerOrder(request, env, id);
   if (order.status === 'paid' || order.status === 'review_required') throw new HttpError(409, 'This order cannot start another payment.');
-  if (!order.checkout_eligible) throw new HttpError(409, 'This payment link is only for one $15 NFC keytag.');
+  if (!order.checkout_eligible) throw new HttpError(409, 'This order needs a custom quote before payment.');
+  if (dynamicCheckoutReady(env)) {
+    const quote = fixedPriceQuote(order.product, order.quantity, JSON.parse(order.customization || '{}'));
+    if (!quote) throw new HttpError(409, 'This order requires a custom quote.');
+    const rate = env.SHIPPING_RATE_IDS.split(',').filter(Boolean)[0];
+    assertShippingRate(await stripeGet(env, `shipping_rates/${encodeURIComponent(rate)}`), env);
+    const session = await createDynamicSession(env, order, quote);
+    const changed = await env.DB.prepare("UPDATE orders SET status = 'awaiting_payment' WHERE id = ? AND status IN ('submitted','awaiting_payment')").bind(id).run();
+    if (!changed.meta.changes) throw new HttpError(409, 'Order status changed. Please refresh.');
+    return json({url:session.url,id});
+  }
+  if (order.product !== 'Custom 3D NFC Keychain / Keytag' || order.quantity !== 1)
+    throw new HttpError(503, 'Checkout for this item is not enabled yet.');
   if (!readiness(env)) throw new HttpError(503, 'Checkout remains disabled until configuration and testing are complete.');
   const link = await stripeGet(env, `payment_links/${encodeURIComponent(env.STRIPE_PAYMENT_LINK_ID)}`);
   const lines = await stripeGet(env, `payment_links/${encodeURIComponent(env.STRIPE_PAYMENT_LINK_ID)}/line_items?limit=100`);
@@ -136,7 +149,7 @@ async function webhook(request, env) {
     throw new HttpError(400, 'Unexpected webhook event.');
   if (await env.DB.prepare('SELECT id FROM payment_events WHERE id = ?').bind(event.id).first()) return json({received:true});
   const session = await stripeGet(env, `checkout/sessions/${encodeURIComponent(event.data.object.id)}`);
-  if (session.payment_link !== env.STRIPE_PAYMENT_LINK_ID) {
+  if (session.payment_link && session.payment_link !== env.STRIPE_PAYMENT_LINK_ID) {
     await statements(env, event, 'ignored_other_payment_link', Date.now()).run();
     return json({received:true});
   }
@@ -151,7 +164,9 @@ async function webhook(request, env) {
     return json({received:true});
   }
   const lines = await stripeGet(env, `checkout/sessions/${encodeURIComponent(session.id)}/line_items?limit=100`);
-  let reason = paymentMismatch(session, lines, order, env);
+  let reason = session.payment_link ? paymentMismatch(session, lines, order, env)
+    : session.metadata?.order_id ? dynamicPaymentMismatch(session, lines, order, env)
+    : 'Per-order checkout is disabled';
   if (!readiness(env)) reason = reason || 'Payment received while checkout configuration was disabled';
   if (!reason) {
     // D1 batches are atomic; conditional notification insertion handles concurrent distinct events and sessions.
@@ -181,7 +196,7 @@ async function requireAdmin(request, env) {
 export async function route(request, env) {
   const url = new URL(request.url), path = url.pathname;
   if (path === '/api/config' && request.method === 'GET') return json({
-    submissionsEnabled:env.ORDER_SUBMISSIONS_ENABLED === 'true' && configured(env.TURNSTILE_SITE_KEY) && configured(env.TURNSTILE_SECRET_KEY), checkoutEnabled:readiness(env),
+    submissionsEnabled:env.ORDER_SUBMISSIONS_ENABLED === 'true' && configured(env.TURNSTILE_SITE_KEY) && configured(env.TURNSTILE_SECRET_KEY), checkoutEnabled:readiness(env), dynamicCheckoutEnabled:dynamicCheckoutReady(env),
     turnstileSiteKey:configured(env.TURNSTILE_SITE_KEY) ? env.TURNSTILE_SITE_KEY : null,
     environment:env.ENVIRONMENT,
     ...(env.ENVIRONMENT === 'production' && !readiness(env) ? {checkoutReadinessIssue:readinessIssue(env)} : {}),
@@ -203,7 +218,7 @@ export async function route(request, env) {
     if (orderMatch[2] && request.method === 'POST') return checkout(request, env, orderMatch[1]);
     if (!orderMatch[2] && request.method === 'GET') {
       const order = await customerOrder(request, env, orderMatch[1]);
-      return json({id:order.id,status:order.status,checkoutEligible:!!order.checkout_eligible,paymentVerified:order.status === 'paid'});
+      return json({id:order.id,status:order.status,checkoutEligible:!!order.checkout_eligible && (dynamicCheckoutReady(env) || (order.product === 'Custom 3D NFC Keychain / Keytag' && order.quantity === 1)),paymentVerified:order.status === 'paid'});
     }
   }
   if (path.startsWith('/api/admin/')) {
