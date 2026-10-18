@@ -20,6 +20,11 @@ export function validateDetails(details) {
   if (Object.keys(details.customization).some(f => !allowed.includes(f))) throw new HttpError(400, 'Unknown customization field.');
   const customization = {};
   for (const field of allowed) {
+    // Preserve legacy retry fingerprints when a newly added optional field was
+    // never present in that client's order payload.
+    if (!Object.hasOwn(details.customization, field) &&
+        (field === 'Desk plate mounting' || field === 'Material preference' ||
+         (product.name === '3D Printed Google Review NFC Display' && field === 'Notes'))) continue;
     const value = details.customization[field] ?? '';
     if (typeof value !== 'string' || value.length > 4000) throw new HttpError(400, 'Customization is too long.');
     customization[field] = value.trim();

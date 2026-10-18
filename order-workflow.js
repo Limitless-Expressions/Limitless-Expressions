@@ -13,7 +13,8 @@
   panel.innerHTML = '<div class="formgrid"><div class="field"><label for="orderName">Your name</label><input id="orderName" autocomplete="name" maxlength="120"></div><div class="field"><label for="orderEmail">Email address</label><input id="orderEmail" type="email" autocomplete="email" maxlength="254"></div></div><div id="orderChallenge"></div><p id="orderStatus" role="status" aria-live="polite"></p><button id="orderPay" class="primary" type="button" hidden>Continue to secure payment</button><button id="orderRefresh" class="secondary" type="button" hidden>Check payment status</button>';
   document.getElementById('summary').after(panel);
   const status = panel.querySelector('#orderStatus'), pay = panel.querySelector('#orderPay'), refresh = panel.querySelector('#orderRefresh');
-  button.textContent = 'Continue to secure payment';
+  const submitLabel = () => button.dataset.quote === 'true' ? 'Submit quote request' : 'Continue to secure payment';
+  button.textContent = submitLabel();
   button.disabled = true;
   document.querySelector('#modal .note').textContent = 'Your order details and artwork are saved securely before payment. Submission alone does not confirm payment.';
   let backend = null, saved = null, busy = false, token = null, challenge = null, widget = null, fingerprint = null, selected = null;
@@ -48,7 +49,7 @@
     panel.querySelectorAll('input').forEach(input => { input.disabled = false; });
   }
   document.addEventListener('click', event => {
-    if (event.target.matches('.customize')) reset(products[Number(event.target.dataset.i)]);
+      if (event.target.matches('button.customize')) reset(products[Number(event.target.dataset.i)]);
   });
   button.onclick = async () => {
     if (busy || !active || !backend?.submissionsEnabled) return;
@@ -59,6 +60,8 @@
     try {
       const name = panel.querySelector('#orderName'), email = panel.querySelector('#orderEmail');
       if (!name.value.trim() || !email.value || !email.checkValidity()) throw Error('Enter your name and a valid email address.');
+      const requiredArtwork = form.querySelector('input[type="file"][required]');
+      if (requiredArtwork && !requiredArtwork.files.length) throw Error('Upload your logo or design before submitting.');
       const customization = {}, files = [];
       for (const field of active.fields) {
         if (field === 'Quantity') continue;
@@ -142,6 +145,6 @@
       if (saved) checkStatus(); else message('Check your saved order or contact us for verified payment status.');
     }
   }).catch(() => message('Order service is not configured yet. Checkout is disabled.'));
-  new MutationObserver(() => { if (active !== selected && document.getElementById('modal').classList.contains('open')) reset(active); button.textContent = saved ? 'Order details saved' : 'Continue to secure payment'; })
+  new MutationObserver(() => { if (active !== selected && document.getElementById('modal').classList.contains('open')) reset(active); button.textContent = saved ? 'Order details saved' : submitLabel(); })
     .observe(form, {childList:true});
 })();

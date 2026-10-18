@@ -69,6 +69,7 @@ async function createOrder(request, env) {
   if (rawFiles.length > 3) throw new HttpError(400, 'Upload at most three artwork files.');
   const files = await Promise.all(rawFiles.map(validateArtwork));
   if (order.product === 'Custom 3D NFC Keychain / Keytag' && !files.length) throw new HttpError(400, 'Upload your keytag artwork.');
+  if (['Custom 3D Printed Hype Chain','Custom Business Logo / Sign'].includes(order.product) && !files.length) throw new HttpError(400, 'Upload your logo or design.');
   const accessHash = await digest(details.accessToken);
   const requestHash = await digest(JSON.stringify({order, files:files.map(f => ({filename:f.filename, hash:f.hash}))}));
   const existing = await env.DB.prepare('SELECT id, request_hash, status FROM orders WHERE access_hash = ?').bind(accessHash).first();
