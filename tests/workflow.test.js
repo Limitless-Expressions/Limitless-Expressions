@@ -6,6 +6,7 @@ import {DatabaseSync} from 'node:sqlite';
 import vm from 'node:vm';
 import worker from '../backend/src/worker.js';
 import {catalog} from '../backend/src/catalog.js';
+import {fixedPriceQuote} from '../backend/src/pricing.js';
 import {validateDetails, validateArtwork} from '../backend/src/orders.js';
 import {readiness, assertLink, assertShippingRate, paymentMismatch, LIVE_LINK} from '../backend/src/stripe.js';
 import {verifyStripeSignature} from '../backend/src/security.js';
@@ -232,4 +233,13 @@ test('email provider failures remain queued and retry without changing payment s
   });
   assert.equal(calls,1); assert.equal(sqlite.prepare('SELECT state FROM notifications').get().state,'sent');
   assert.equal(sqlite.prepare('SELECT status FROM orders').get().status,'submitted');
+});
+
+
+test('Hype Chain size pricing matches approved checkout amounts', () => {
+  const name='Custom 3D Printed Hype Chain';
+  assert.equal(fixedPriceQuote(name,1,{'Pendant size':'4 in'})?.subtotalCents,4000);
+  assert.equal(fixedPriceQuote(name,1,{'Pendant size':'5 in'})?.subtotalCents,5000);
+  assert.equal(fixedPriceQuote(name,2,{'Pendant size':'5 in'}),null);
+  assert.equal(fixedPriceQuote(name,1,{'Pendant size':'6 in'}),null);
 });
