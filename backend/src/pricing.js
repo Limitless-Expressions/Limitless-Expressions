@@ -14,8 +14,10 @@ export function fixedPriceQuote(product, quantity, customization = {}) {
       else return null; // No published checkout price for 2–4 or 6–9.
       break;
     case 'Custom 3D Printed Hype Chain':
-      if (quantity !== 1 || !['4 in', '4"'].includes(customization['Pendant size'])) return null;
-      unitCents = 4000;
+      if (quantity !== 1) return null;
+      if (['4 in', '4"'].includes(customization['Pendant size'])) unitCents = 4000;
+      else if (['5 in', '5"'].includes(customization['Pendant size'])) unitCents = 5000;
+      else return null;
       break;
     case '3D Printed Google Review NFC Display':
       if (quantity !== 1) return null;
