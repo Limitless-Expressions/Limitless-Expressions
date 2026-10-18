@@ -786,15 +786,12 @@ function initNfcProductPage(){
     } else if(i===0){
       const size=document.getElementById('f_Pendant_size')?.value;
       const q=Number(document.getElementById('f_Quantity')?.value);
-      if(size==='4 in' && q===1){
-        price.textContent='$40.00';
-        note.textContent='4-inch pendant · '+shipping;
+      if((size==='4 in' || size==='5 in') && q===1){
+        price.textContent=size==='4 in'?'$40.00':'$50.00';
+        note.textContent=(size==='4 in'?'4-inch':'5-inch')+' pendant · '+shipping;
       } else {
         price.textContent='Custom quote';
-        note.textContent=size==='5 in'
-          ? '5-inch pendant pricing requires a custom quote.'
-          : !size ? 'Choose a pendant size to see pricing.'
-          : 'Pricing for this quantity requires a custom quote.';
+        note.textContent=!size ? 'Choose a pendant size to see pricing.' : 'Pricing for this quantity requires a custom quote.';
       }
     } else if(i===6 || i===7){
       const size=document.getElementById('f_Neon_sign_size')?.value;
