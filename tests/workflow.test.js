@@ -67,7 +67,8 @@ test('storefront catalog, product data and checkout integrations are preserved',
   const original = source.replace('<script src="order-config.js"></script><script src="order-workflow.js"></script>','');
   assert.match(source, /id="photo-position-data"/);
   assert.match(source, /initNfcProductPage\(\)/);
-  assert.match(source, /\?product=nfc-keytag/);
+  assert.match(source, /'nfc-keytag'/);
+  assert.match(source, /href="\?product=\$\{productSlugs\[i\]\}"/);
   assert.match(source, /<script src="order-config.js"><\/script><script src="order-workflow.js"><\/script>/);
   const extracted = vm.runInNewContext(original.slice(original.indexOf('const products='),original.indexOf('function galleryHTML'))+';products');
   assert.equal(catalog.length,11);
