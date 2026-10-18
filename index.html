@@ -755,7 +755,7 @@ function initNfcProductPage(){
   document.body.classList.add('nfc-product-page');
   document.title=product.name+' | Limitless Expressions';
   document.getElementById('productBreadcrumb').textContent=product.name;
-  document.getElementById('productEyebrow').textContent='CUSTOM MADE · '+product.tag;
+  document.getElementById('productEyebrow').textContent=i===0?'CUSTOM MADE · PERSONALIZED HYPE CHAINS':'CUSTOM MADE · '+product.tag;
   document.getElementById('productHeading').textContent=product.name;
   document.getElementById('productDescription').textContent=product.desc;
   const card=grid.children[i],gallery=card.querySelector('.gallery');
@@ -783,6 +783,19 @@ function initNfcProductPage(){
       else if(q===5){price.textContent='$50.00';note.textContent='5 keytags · '+shipping}
       else if(Number.isInteger(q)&&q>=10){price.textContent='$'+(q*7).toFixed(2);note.textContent=q+' keytags at $7 each · '+shipping}
       else {price.textContent='Custom quote';note.textContent='This quantity needs a custom quote before payment.'}
+    } else if(i===0){
+      const size=document.getElementById('f_Pendant_size')?.value;
+      const q=Number(document.getElementById('f_Quantity')?.value);
+      if(size==='4 in' && q===1){
+        price.textContent='$40.00';
+        note.textContent='4-inch pendant · '+shipping;
+      } else {
+        price.textContent='Custom quote';
+        note.textContent=size==='5 in'
+          ? '5-inch pendant pricing requires a custom quote.'
+          : !size ? 'Choose a pendant size to see pricing.'
+          : 'Pricing for this quantity requires a custom quote.';
+      }
     } else if(i===6 || i===7){
       const size=document.getElementById('f_Neon_sign_size')?.value;
       if(i===6 && size==='20 in'){price.textContent='$250.00';note.textContent=shipping}
