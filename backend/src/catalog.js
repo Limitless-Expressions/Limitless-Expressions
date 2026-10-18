@@ -136,6 +136,7 @@ export const catalog = [
     "price": "20\" — $250",
     "fields": [
       "Name / text (optional if uploading logo)",
+      "Neon channel style",
       "Font style",
       "Upload logo / design",
       "Neon color",

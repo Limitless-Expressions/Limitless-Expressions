@@ -232,3 +232,18 @@ test('email provider failures remain queued and retry without changing payment s
   assert.equal(calls,1); assert.equal(sqlite.prepare('SELECT state FROM notifications').get().state,'sent');
   assert.equal(sqlite.prepare('SELECT status FROM orders').get().status,'submitted');
 });
+
+test('neon selections survive validation; legacy orders need no new field', async () => {
+  const legacy = {...details(),product:'Custom 3D Printed Neon Name Sign',customization:{'Font style':'Original handwritten request','Mounting preference':'Legacy wall mount'}};
+  assert.equal(validateDetails(legacy).customization['Font style'],'Original handwritten request');
+  assert.equal(validateDetails(legacy).customization['Neon channel style'],'');
+  const customization = {'Neon channel style':'Double-Stroke Neon','Font style':'Pacifico','Mounting preference':'Wall Standoffs (Request Quote)'};
+  assert.deepEqual({...validateDetails({...legacy,customization}).customization,...customization},validateDetails({...legacy,customization}).customization);
+  const {env,sqlite} = fixture();
+  const response = await worker.fetch(orderRequest({...legacy,customization},false),env,{});
+  assert.equal(response.status,201);
+  const saved = sqlite.prepare('SELECT * FROM orders').get();
+  const snapshot = JSON.stringify(saved);
+  for (const value of Object.values(customization)) assert.ok(snapshot.includes(value));
+  sqlite.close();
+});
