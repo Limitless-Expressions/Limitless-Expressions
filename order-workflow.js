@@ -48,9 +48,6 @@
     button.disabled = !backend?.submissionsEnabled;
     panel.querySelectorAll('input').forEach(input => { input.disabled = false; });
   }
-  document.addEventListener('click', event => {
-      if (event.target.matches('button.customize')) reset(products[Number(event.target.dataset.i)]);
-  });
   button.onclick = async () => {
     if (busy || !active || !backend?.submissionsEnabled) return;
     if (saved) { await checkStatus(); return; }

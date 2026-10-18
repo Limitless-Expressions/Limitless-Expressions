@@ -68,6 +68,8 @@ test('storefront catalog, product data and checkout integrations are preserved',
   assert.match(source, /id="photo-position-data"/);
   assert.match(source, /initNfcProductPage\(\)/);
   assert.match(source, /const productSlugs=\["hype-chain","nfc-keytag"/);
+  assert.doesNotMatch(source, /matches\('(?:button\.)?customize'\)\)openProduct/);
+  assert.doesNotMatch(source, /<button class="customize"/);
   assert.match(source, /<script src="order-config.js"><\/script><script src="order-workflow.js"><\/script>/);
   const extracted = vm.runInNewContext(original.slice(original.indexOf('const products='),original.indexOf('function galleryHTML'))+';products');
   assert.equal(catalog.length,11);
