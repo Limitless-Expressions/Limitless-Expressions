@@ -537,8 +537,9 @@ function initGallery(gallery){
   sync();
 }
 
+const productSlugs=["hype-chain","nfc-keytag","google-review-display","name-desk-plate","name-initial-sign","name-light-box","neon-name-sign","business-logo-sign"];
 const grid=document.getElementById('products');let active=null,cart=[];
-products.forEach((p,i)=>{const c=document.createElement('article');c.className='card';c.innerHTML=`<div class="art" style="${p.imageType==='deskplate'?'height:235px':p.imageType==='review'?'height:410px;min-height:410px;max-height:410px;background:#0b0b0b':''}"><span class="tag">${p.tag}</span>${p.images?.length?galleryHTML(p):p.image?`<img src="${p.image}" alt="${p.imageType==='review'?'Google Review NFC display being 3D printed':(p.imageType==='lightbox'||p.imageType==='neon')?'ArGon custom illuminated name light box':p.imageType==='deskplate'?'Custom Andrea MSN 2026 Alumni desk plate':'Huss Auto Detailing custom hype chain example'}" style="width:100%;height:100%;object-fit:${(p.imageType==='lightbox'||p.imageType==='neon'||p.imageType==='review')?'contain':'cover'};object-position:${p.imageType==='deskplate'?'center 56%':'center center'};display:block;background:#0b0b0b">`:`<div class="mock">${p.mock}</div>`}</div><div class="cardbody"><h3>${p.name}</h3><p>${p.desc}</p><div class="cardfoot"><span class="price">${p.price}</span>${p.comingSoon?'':(i===0||i===1)?'<a class="customize" href="?product='+(i===0?'hype-chain':'nfc-keytag')+'">CUSTOMIZE →</a>':`<button class="customize" data-i="${i}">CUSTOMIZE →</button>`}</div></div>`;grid.appendChild(c)});
+products.forEach((p,i)=>{const c=document.createElement('article');c.className='card';c.innerHTML=`<div class="art" style="${p.imageType==='deskplate'?'height:235px':p.imageType==='review'?'height:410px;min-height:410px;max-height:410px;background:#0b0b0b':''}"><span class="tag">${p.tag}</span>${p.images?.length?galleryHTML(p):p.image?`<img src="${p.image}" alt="${p.imageType==='review'?'Google Review NFC display being 3D printed':(p.imageType==='lightbox'||p.imageType==='neon')?'ArGon custom illuminated name light box':p.imageType==='deskplate'?'Custom Andrea MSN 2026 Alumni desk plate':'Huss Auto Detailing custom hype chain example'}" style="width:100%;height:100%;object-fit:${(p.imageType==='lightbox'||p.imageType==='neon'||p.imageType==='review')?'contain':'cover'};object-position:${p.imageType==='deskplate'?'center 56%':'center center'};display:block;background:#0b0b0b">`:`<div class="mock">${p.mock}</div>`}</div><div class="cardbody"><h3>${p.name}</h3><p>${p.desc}</p><div class="cardfoot"><span class="price">${p.price}</span>${p.comingSoon?'':'<a class="customize" href="?product='+productSlugs[i]+'">CUSTOMIZE →</a>'}</div></div>`;grid.appendChild(c)});
 grid.querySelectorAll('.gallery').forEach(initGallery);
 function fieldHTML(name){if(name==='Upload photo / reference')return `<div class="field full"><label>Upload photo / reference</label><input id="f_Upload_photo_reference" type="file" accept="image/*,.pdf"><div style="margin-top:9px;color:#c9c1b2;font-size:13px;line-height:1.45">Upload a clear photo, sketch, drawing, or reference for the part you need.</div></div>`;if(name==='Specifications')return `<div class="field full"><label>Specs / measurements</label><textarea id="f_Specifications" placeholder="Tell us the dimensions, what the part needs to fit, what it needs to do, material or strength needs, and any other important measurements or details."></textarea></div>`;if(name==='Name / text (optional if uploading logo)')return `<div class="field"><label>Name / text <span style="color:#8f897e;font-weight:500">(optional if uploading logo)</span></label><input id="f_Name_text_optional_if_uploading_logo_" placeholder="Enter name / text"></div>`;if(name==='Upload logo / design')return `<div class="field full"><label>Upload logo / design</label><input id="f_Upload_logo_design" type="file" accept="image/*,.pdf,.svg"><div style="margin-top:9px;color:#c9c1b2;font-size:13px;line-height:1.45">Upload your logo or design if you want a logo sign instead of a name.</div></div>`;if(name==='Neon color')return `<div class="field"><label>Neon color</label><select id="f_Neon_color"><option value="White">White</option><option value="Red">Red</option><option value="Yellow">Yellow</option><option value="Green">Green</option><option value="Blue">Blue</option><option value="Orange">Orange</option><option value="Purple">Purple</option></select></div>`;if(name==='Body color')return `<div class="field"><label>Body color</label><select id="f_Body_color"><option value="Transparent">Transparent</option><option value="Black">Black</option><option value="White">White</option></select></div>`;if(name==='LED color')return `<div class="field"><label>LED color</label><select id="f_LED_color" style="width:100%;background:#090909;color:#f4efe5;border:1px solid #39342b;border-radius:10px;padding:13px 12px;font:inherit"><option value="Cool white">Cool white</option><option value="Warm white">Warm white</option></select></div>`;if(name==='Neon sign size')return `<div class="field full"><label>Size</label><select id="f_Neon_sign_size" style="width:100%;background:#090909;color:#f4efe5;border:1px solid #39342b;border-radius:10px;padding:13px 12px;font:inherit"><option value="10 in">${active.name==='Custom Business Logo / Sign'?'10" — $150':'10" (Only 3-4 letter names) — Quote required'}</option><option value="20 in">${active.name==='Custom 3D Printed Neon Name Sign'?'20" — $250':'20" — Quote required'}</option><option value="30 in">30" — Quote required</option>${active.name==='Custom Business Logo / Sign'?'<option value="45 in">45" Neon Acrylic or ACM UV Printed Logo — estimated $750–$1,000 (not a fixed final price)</option>':''}<option value="Larger / Custom Quote">Larger / Custom Quote</option></select><div style="margin-top:9px;color:#c9c1b2;font-size:13px;line-height:1.45"><strong style="color:#e6b94f">Larger size = higher price.</strong> Signs over 20 in may be produced in reinforced sections or may require an alternative backing/material depending on the design. We’ll contact you if your design would be better suited for another construction method.</div></div>`;const id='f_'+name.replace(/\W+/g,'_');if(name==='Quantity')return `<div class="field full"><label>Quantity</label><input id="${id}" type="number" min="1" step="1" value="1" inputmode="numeric"></div>`;if(name==='Pendant size')return `<div class="field full"><label>Pendant size</label><select id="${id}" style="width:100%;background:#090909;color:#f4efe5;border:1px solid #39342b;border-radius:10px;padding:13px 12px;font:inherit"><option value="">Select pendant size</option><option value="4 in">4 in</option><option value="5 in">5 in</option></select></div>`;if(name==='Upload design / logo')return `<div class="field full"><label>Upload design / logo</label><input id="${id}" type="file" accept="image/*,.pdf,.svg"><div style="margin-top:9px;color:#c9c1b2;font-size:13px;line-height:1.45">Upload your logo, artwork, or reference image.</div></div>`;if(name==='Logo upload')return `<div class="field full"><label>Upload design / logo</label><input id="${id}" type="file" accept="image/*,.pdf,.svg"><div style="margin-top:9px;color:#c9c1b2;font-size:13px;line-height:1.45">Upload your logo, artwork, or reference image. <strong style="color:#e6b94f">Maximum 4 colors.</strong></div></div>`;if(name==='Keytag size')return `<div class="field full"><label>Keytag size</label><select id="${id}" style="width:100%;background:#090909;color:#f4efe5;border:1px solid #39342b;border-radius:10px;padding:13px 12px;font:inherit"><option value="2 in">2 in</option><option value="3 in">3 in</option></select><div style="margin-top:9px;color:#c9c1b2;font-size:13px;line-height:1.45">Logos with a lot of fine detail may need to be printed at the larger size so all details can be reproduced clearly.</div></div>`;if(name==='NFC destination URL')return `<div class="field full"><label>NFC destination URL</label><input id="${id}" placeholder="Paste Instagram, Facebook, TikTok, YouTube, website, or other link"></div>`;if(name==='Google review link')return `<div class="field"><label>Google Review Link / Google Maps Business Location</label><input id="${id}" placeholder="Enter ${name.toLowerCase()}"></div>`;if(name==='Notes'||name.includes('location'))return `<div class="field full"><label>${name}</label><textarea id="${id}" placeholder="Optional details"></textarea></div>`;if(name.toLowerCase().includes('upload'))return `<div class="field full"><label>${name}</label><input id="${id}" type="file" accept="image/*,.pdf,.svg"></div>`;if(name.includes('color'))return `<div class="field"><label>${name}</label><input id="${id}" placeholder="e.g. Black, white, gold"></div>`;return `<div class="field"><label>${name}</label><input id="${id}" placeholder="Enter ${name.toLowerCase()}"></div>`}
 function openProduct(i){active=products[i];document.getElementById('modalTitle').textContent=active.name;let html=active.fields.map(fieldHTML).join('');if(active.name==='Custom 3D Printed Name Light Box')html+=`<div class="field full"><div style="border:1px solid #39342b;border-radius:10px;padding:13px 14px;color:#c9c1b2;font-size:13px;line-height:1.45"><strong style="color:#e6b94f">Standard size:</strong> approximately 10 in wide (slightly under 10 in due to our print-bed size).</div></div>`;if(active.name==='Custom 3D Printed Neon Name Sign'||active.name==='Custom Business Logo / Sign')html+=`<div class="field full"><div style="border:1px solid #5a4722;background:#151108;border-radius:10px;padding:13px 14px;color:#e7dfd0;font-size:13px;line-height:1.45"><strong style="color:#e6b94f">INDOOR SIGN ONLY</strong> — This neon sign is intended for indoor use.</div></div>`;html+='<div class="field full"><label>Pricing</label><div id="customizationPricing" style="white-space:pre-line;color:#e6b94f;font-size:14px;line-height:1.5"></div></div>';document.getElementById('form').innerHTML=html;const upload=document.getElementById('form').querySelector('input[type="file"]');if(upload){const qualityNote=document.createElement('div');qualityNote.className='upload-quality-note';qualityNote.style.cssText='margin-top:9px;color:#c9c1b2;font-size:13px;line-height:1.45';qualityNote.textContent='Try to upload the best quality JPEG or SVG of your logo.';upload.parentElement.appendChild(qualityNote);}document.getElementById('modal').classList.add('open');makeSummary()}
@@ -748,8 +749,8 @@ initPhotoPositioning();
 
 function initNfcProductPage(){
   const productRoute=new URLSearchParams(location.search).get('product');
-  if(!['nfc-keytag','hype-chain'].includes(productRoute))return;
-  const productIndex=productRoute==='hype-chain'?0:1;
+  const productIndex=productSlugs.indexOf(productRoute);
+  if(productIndex<0)return;
   const p=products[productIndex];
   document.body.classList.add('nfc-product-page');
   document.title=p.name+' | Limitless Expressions';
@@ -758,7 +759,20 @@ function initNfcProductPage(){
   document.querySelector('.product-details h1').textContent=p.name;
   document.querySelector('.product-description').textContent=p.desc;
   const card=grid.children[productIndex],gallery=card.querySelector('.gallery');
-  if(gallery)document.getElementById('nfcProductPhotos').appendChild(gallery);
+  const photoFrame=document.getElementById('nfcProductPhotos');
+  if(gallery)photoFrame.appendChild(gallery);
+  else {
+    const image=card.querySelector('.art img');
+    if(image){
+      const copy=image.cloneNode(true);
+      copy.style.objectFit='contain';
+      copy.style.objectPosition='center center';
+      photoFrame.appendChild(copy);
+    }else{
+      const placeholder=card.querySelector('.mock');
+      if(placeholder)photoFrame.appendChild(placeholder.cloneNode(true));
+    }
+  }
   document.getElementById('nfcProductFormMount').appendChild(document.getElementById('modal'));
   const modal=document.getElementById('modal');
   modal.onclick=null;
@@ -771,6 +785,24 @@ function initNfcProductPage(){
   function updatePrice(){
     const q=Number(document.getElementById('f_Quantity')?.value);
     if(productIndex===0){const size=document.getElementById('f_Pendant_size')?.value;price.textContent=size==='4 in'?'$'+(40*q).toFixed(2):size==='5 in'?'$'+(50*q).toFixed(2):'Choose a size';note.textContent=size==='5 in'?'5-inch pendant · $50 each. Checkout eligibility subject to confirmation.':size==='4 in'?'4-inch pendant · $40 each. Shipping and tax calculated at checkout.':'Select a pendant size.';return;}
+    if(productIndex>=2){
+      const fixed=[35,35,25,40];
+      const size=document.getElementById('f_Neon_sign_size')?.value;
+      let amount=null,detail='Shipping and tax calculated at checkout.';
+      if(productIndex<=5){
+        amount=fixed[productIndex-2]*q;
+        if(q!==1||productIndex===5)detail='Order may require a shipping quote before secure checkout.';
+      }else if(productIndex===6){
+        if(size==='20 in')amount=250*q;
+        detail='Custom signage requires a shipping quote before checkout.';
+      }else if(productIndex===7){
+        if(size==='10 in')amount=150*q;
+        detail='Large or custom signage requires a quote before checkout.';
+      }
+      price.textContent=amount===null?'Custom quote':'$'+amount.toFixed(2);
+      note.textContent=detail;
+      return;
+    }
     if(q===1){price.textContent='$15.00';note.textContent='Single keytag · Shipping and tax calculated at checkout.'}
     else if(q===5){price.textContent='$50.00';note.textContent='5 keytags · Shipping and tax calculated at checkout.'}
     else if(Number.isInteger(q)&&q>=10){price.textContent=String.fromCharCode(36)+(q*7).toFixed(2);note.textContent=q+' keytags at $7 each · Shipping and tax calculated at checkout.'}
