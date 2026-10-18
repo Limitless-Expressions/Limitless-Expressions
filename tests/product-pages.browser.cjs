@@ -99,10 +99,17 @@ const {pathToFileURL}=require('node:url');
       await page.goto(base);assert.equal(await page.locator('#products .card').count(),11);
       assert.equal(await page.locator('#products a.customize').count(),8);
       for(const slug of slugs)assert.equal(await page.locator(`#products a[href="?product=${slug}"]`).count(),1);
-      await page.locator('#products a[href="?product=hype-chain"]').click();await page.waitForURL(url=>url.searchParams.get('product')==='hype-chain');
-      await page.goBack();assert.equal(await page.locator('body.nfc-product-page').count(),0);
-      await page.goForward();assert.equal(await page.locator('.product-details h1').textContent(),catalog[0].name);
-      await page.locator('.product-crumbs a').click();await page.waitForURL(url=>url.hash==='#shop');assert.equal(await page.locator('body.nfc-product-page').count(),0);
+      for(const [index,slug] of slugs.entries()){
+        await page.locator(`#products a[href="?product=${slug}"]`).click();
+        await page.waitForURL(url=>url.searchParams.get('product')===slug);
+        assert.equal(await page.locator('.product-details h1').textContent(),catalog[index].name);
+        assert.equal(await page.locator('body.nfc-product-page').count(),1);
+        await page.goBack();assert.equal(await page.locator('body.nfc-product-page').count(),0);
+        assert.equal(await page.locator('#modal.open').count(),0,'Back restores the storefront without a popup');
+        await page.goForward();assert.equal(await page.locator('.product-details h1').textContent(),catalog[index].name);
+        await page.locator('.product-crumbs a').click();await page.waitForURL(url=>url.hash==='#shop');
+        assert.equal(await page.locator('body.nfc-product-page').count(),0);
+      }
       for(const route of ['3d-printed-dogs','custom-parts','digital-stl-files','unknown']){await page.goto(base+'?product='+route);assert.equal(await page.locator('body.nfc-product-page').count(),0);}
       await context.close();console.log(width+'px: all eight product pages, uploads, galleries, prices, Turnstile, saved selections, checkout/quotes and navigation passed');
     }
