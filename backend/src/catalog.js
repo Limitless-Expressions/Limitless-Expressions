@@ -65,6 +65,7 @@ export const catalog = [
     "price": "$35",
     "fields": [
       "Google review link",
+      "Notes",
       "Quantity"
     ]
   },
@@ -81,6 +82,7 @@ export const catalog = [
       "Bottom Row",
       "Primary color",
       "Accent color",
+      "Desk plate mounting",
       "Logo upload",
       "Notes",
       "Quantity"
@@ -165,6 +167,7 @@ export const catalog = [
       "Upload logo / design",
       "Neon color",
       "Body color",
+      "Material preference",
       "Mounting preference",
       "Notes",
       "Neon sign size",

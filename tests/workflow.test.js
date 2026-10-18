@@ -67,7 +67,7 @@ test('storefront catalog, product data and checkout integrations are preserved',
   const original = source.replace('<script src="order-config.js"></script><script src="order-workflow.js"></script>','');
   assert.match(source, /id="photo-position-data"/);
   assert.match(source, /initNfcProductPage\(\)/);
-  assert.match(source, /\?product=nfc-keytag/);
+  assert.match(source, /const productSlugs=\["hype-chain","nfc-keytag"/);
   assert.match(source, /<script src="order-config.js"><\/script><script src="order-workflow.js"><\/script>/);
   const extracted = vm.runInNewContext(original.slice(original.indexOf('const products='),original.indexOf('function galleryHTML'))+';products');
   assert.equal(catalog.length,11);
@@ -245,5 +245,29 @@ test('neon selections survive validation; legacy orders need no new field', asyn
   const saved = sqlite.prepare('SELECT * FROM orders').get();
   const snapshot = JSON.stringify(saved);
   for (const value of Object.values(customization)) assert.ok(snapshot.includes(value));
+  sqlite.close();
+});
+
+test('product pages require chain/sign artwork and retain published checkout eligibility', async () => {
+  for(const product of ['Custom 3D Printed Hype Chain','Custom Business Logo / Sign']) {
+    const {env,sqlite}=fixture();
+    const customization=product.includes('Hype')?{'Pendant size':'4 in'}:{'Neon sign size':'10 in'};
+    const data={...details(),product,customization};
+    assert.equal((await worker.fetch(orderRequest(data,false),env,{})).status,400);
+    assert.equal((await worker.fetch(orderRequest(data,true),env,{})).status,201);
+    assert.equal((await worker.fetch(orderRequest(data,true),env,{})).status,200,'identical retry reuses the saved order');
+    assert.equal(sqlite.prepare('SELECT COUNT(*) as count FROM orders').get().count,1);
+    sqlite.close();
+  }
+  assert.equal(validateDetails({...details(),product:'Custom 3D Printed Hype Chain',customization:{'Pendant size':'5 in'}}).eligible,false);
+  const desk={...details(),product:'Custom 3D Printed Name / Desk Plate',customization:{'Name / Top Row':'Alex','Bottom Row':'CEO','Desk plate mounting':'Stand and mounting holes'}};
+  const {env,sqlite}=fixture();
+  assert.equal((await worker.fetch(orderRequest(desk,false),env,{})).status,201);
+  assert.match(sqlite.prepare('SELECT customization FROM orders').get().customization,/Stand and mounting holes/);
+  const legacy={...desk,customization:{'Name / Top Row':'Legacy'}};
+  assert.equal(Object.hasOwn(validateDetails(legacy).customization,'Desk plate mounting'),false);
+  assert.equal((await worker.fetch(orderRequest(desk,false),env,{})).status,200);
+  assert.equal(Object.hasOwn(validateDetails({...details(),product:'Custom Business Logo / Sign',customization:{}}).customization,'Material preference'),false);
+  assert.equal(Object.hasOwn(validateDetails({...details(),product:'3D Printed Google Review NFC Display',customization:{}}).customization,'Notes'),false);
   sqlite.close();
 });

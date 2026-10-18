@@ -2,15 +2,19 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
+import {catalog} from '../backend/src/catalog.js';
 
-test('only explicit neon hooks change the published main storefront', () => {
-  // origin/main c49eb1f: undo only the authorized hooks, then compare the entire page.
-  const original = readFileSync(new URL('../index.html',import.meta.url),'utf8')
-    .replace(/\r\n/g,'\n')
-    .replace('<link rel="stylesheet" href="assets/neon-configurator.css">\n<script src="assets/neon-configurator.js"></script>\n','')
-    .replace("'Neon channel style','Font style'", "'Font style'")
-    .replace("if(active.name==='Custom 3D Printed Neon Name Sign'&&['Neon channel style','Font style','Mounting preference'].includes(name))return NeonConfigurator.field(name);",'')
-    .replace("NeonConfigurator.init(document.getElementById('form'));",'');
-  const bytes=Buffer.from(original);
-  assert.equal(createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex'),'c0c51741c604b42a06765ea3065f6101f66677e7');
+test('published product data and neon/checkout implementations are preserved', () => {
+  const baseline=JSON.parse(readFileSync(new URL('fixtures/published-catalog.json',import.meta.url)));
+  const current=structuredClone(catalog);
+  for(const [name,field] of [['3D Printed Google Review NFC Display','Notes'],['Custom 3D Printed Name / Desk Plate','Desk plate mounting'],['Custom Business Logo / Sign','Material preference']]) {
+    const product=current.find(p=>p.name===name);product.fields=product.fields.filter(f=>f!==field);
+  }
+  assert.deepEqual(current,baseline,'only the requested additive fields differ');
+  const protectedFiles=JSON.parse(readFileSync(new URL('fixtures/product-page-preservation.json',import.meta.url)));
+  for(const [file,hash] of Object.entries(protectedFiles)) {
+    let content=readFileSync(new URL('../'+file,import.meta.url),'utf8').replace(/\r\n/g,'\n');
+    if(file==='index.html')content=content.slice(content.indexOf('<header'),content.indexOf('const products='));
+    assert.equal(createHash('sha256').update(content).digest('hex'),hash,file);
+  }
 });
