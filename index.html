@@ -105,7 +105,12 @@ body.nfc-product-page .product-page .product-photo-frame img{max-width:none}
 .neon-channel-sample.neon-outline{-webkit-text-stroke:1px #e6b94f;color:transparent;font-weight:800}
 @media(max-width:480px){.neon-choice-grid{grid-template-columns:1fr}}
 </style>
-</head><body>
+<style>
+.neon-live-preview{display:flex;align-items:center;justify-content:center;min-height:140px;padding:24px 18px;overflow:hidden;background:radial-gradient(ellipse at center,#2c1013 0%,#10090b 70%);border:1px solid #59412b;border-radius:12px;text-align:center}
+#neonPreviewText{max-width:100%;overflow-wrap:anywhere;font-size:clamp(30px,4vw,58px);line-height:1.5;color:#ffd0c9;text-shadow:0 0 3px #fff,0 0 9px #ff3a45,0 0 19px #ed1e38,0 0 33px #d60023}
+#neonPreviewText.outline{color:transparent;-webkit-text-stroke:1.5px #ffbec0;text-shadow:0 0 3px #ff3a45,0 0 12px #e31d36,0 0 23px #a90023}
+.neon-preview-disclaimer{display:block;margin-top:8px;color:#bfb7a9;font-size:12px;line-height:1.5}
+</style></head><body>
 <header class="top"><div class="wrap"><nav><a class="brand" href="#">LIMITLESS <span>EXPRESSIONS</span></a><div class="links"><a href="#shop">Shop</a><a href="#how">How it works</a><a href="#about">About</a></div><div class="mobilebar">CUSTOM MADE</div><button class="cartbtn" id="cartBtn">Cart · <span id="cartCount">0</span></button></nav></div></header>
 <main>
 <section class="hero"><div class="wrap"><div class="eyebrow">CUSTOM MADE • BUILT TO ORDER</div><h1>Your idea.<br>Made physical.</h1><p>Personalized hype chains, NFC pieces, desk plates, illuminated name displays, neon signs and business signage — made to order by Limitless Expressions.</p><div class="cta"><a class="secondary" href="#how">See how it works</a></div></div></section>
@@ -597,10 +602,25 @@ function setupNeonStyleChoices(){
     <label class="neon-choice"><input type="radio" name="neonChannel" value="Double-stroke"><strong>Double-Stroke Neon</strong><span class="neon-channel-sample neon-outline">A L</span><small>Neon follows the letter outlines, creating a double-outline effect.</small></label>
   </div><input type="hidden" id="f_Neon_channel_style" value="Single-stroke">`;
   field.before(style);
+  const preview=document.createElement('div');
+  preview.className='field full';
+  preview.innerHTML=`<label>Preview your sign</label><div class="neon-live-preview"><span id="neonPreviewText">Your Name</span></div><small class="neon-preview-disclaimer">Illustrative font and lighting preview only. Final channel geometry and appearance depend on the approved design.</small>`;
+  field.after(preview);
+  const nameInput=document.getElementById('f_Name_text_optional_if_uploading_logo_');
+  const updatePreview=()=>{
+    const fontChoice=form.querySelector('input[name="neonFont"]:checked').value;
+    const channel=form.querySelector('input[name="neonChannel"]:checked').value;
+    const display=preview.querySelector('#neonPreviewText');
+    display.textContent=nameInput?.value.trim()||'Your Name';
+    display.style.fontFamily="'"+fontChoice+"', cursive";
+    display.classList.toggle('outline',channel==='Double-stroke');
+  };
+  nameInput?.addEventListener('input',updatePreview);
   const sync=()=>{
     form.querySelector('#f_Font_style').value=form.querySelector('input[name="neonFont"]:checked').value;
     form.querySelector('#f_Neon_channel_style').value=form.querySelector('input[name="neonChannel"]:checked').value;
     form.querySelectorAll('.neon-choice').forEach(label=>label.classList.toggle('selected',label.querySelector('input').checked));
+    updatePreview();
     makeSummary();
   };
   form.querySelectorAll('input[name="neonFont"],input[name="neonChannel"]').forEach(input=>input.addEventListener('change',sync));
