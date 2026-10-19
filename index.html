@@ -110,10 +110,13 @@ body.nfc-product-page .product-page .product-photo-frame img{max-width:none}
 #neonPreviewText{max-width:100%;overflow-wrap:anywhere;font-size:clamp(30px,4vw,58px);line-height:1.5;color:#ffd0c9;text-shadow:0 0 3px #fff,0 0 9px #ff3a45,0 0 19px #ed1e38,0 0 33px #d60023}
 #neonPreviewText.outline{color:transparent;-webkit-text-stroke:1.5px #ffbec0;text-shadow:0 0 3px #ff3a45,0 0 12px #e31d36,0 0 23px #a90023}
 .neon-preview-disclaimer{display:block;margin-top:8px;color:#bfb7a9;font-size:12px;line-height:1.5}
+</style><style>
+/* Match the published homepage layout; rotate only the featured work. */
+.hero{padding:64px 0 72px;background:#08090a;border-bottom:1px solid var(--line)}.hero>.wrap{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center}.hero-copy{max-width:560px}.hero h1{font-size:clamp(48px,5.3vw,76px);line-height:1.03;letter-spacing:-.055em;margin:22px 0}.hero h1 span{color:#dfbc70}.hero p{font-size:16px;line-height:1.8;max-width:485px;color:#bcb8af;margin:0}.hero .cta{margin-top:30px;gap:12px;flex-wrap:wrap}.hero .cta a{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:13px 22px;font-size:13px}.hero-details{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:25px;color:#a9a59c;font-size:11px}.hero-details span::before{content:'•';color:#d6ad55;margin-right:7px}.hero-media{margin:0;background:#111;border:1px solid #393329;border-radius:18px;overflow:hidden}.hero-showcase-photos{height:365px;background:#0b0b0b}.hero-showcase-photos img{display:block;width:100%;height:100%;object-fit:contain;padding:20px;transition:opacity .45s ease}.hero-media figcaption{border-top:1px solid #2c2924;padding:15px 20px;font-size:12px;color:#c6bda9;display:flex;justify-content:space-between;gap:12px}.hero-media figcaption span:last-child{color:#d6ad55;font-size:10px;letter-spacing:.12em;text-transform:uppercase}@media(max-width:1050px){.hero>.wrap{gap:36px}.hero-showcase-photos{height:340px}}@media(max-width:850px){.hero>.wrap{gap:28px}.hero h1{font-size:48px}.hero-showcase-photos{height:310px}}@media(max-width:600px){.hero{padding:38px 0 42px}.hero>.wrap{grid-template-columns:1fr;gap:30px}.hero h1{font-size:52px}.hero .cta{flex-direction:row}.hero-showcase-photos{height:280px}}@media(max-width:360px){.hero h1{font-size:44px}.hero-showcase-photos{height:245px}}@media(prefers-reduced-motion:reduce){.hero-showcase-photos img{transition:none}}
 </style></head><body>
 <header class="top"><div class="wrap"><nav><a class="brand" href="#">LIMITLESS <span>EXPRESSIONS</span></a><div class="links"><a href="#shop">Shop</a><a href="#how">How it works</a><a href="#about">About</a></div><div class="mobilebar">CUSTOM MADE</div><button class="cartbtn" id="cartBtn">Cart · <span id="cartCount">0</span></button></nav></div></header>
 <main>
-<section class="hero"><div class="wrap"><div class="eyebrow">CUSTOM MADE • BUILT TO ORDER</div><h1>Your idea.<br>Made physical.</h1><p>Personalized hype chains, NFC pieces, desk plates, illuminated name displays, neon signs and business signage — made to order by Limitless Expressions.</p><div class="cta"><a class="secondary" href="#how">See how it works</a></div></div></section>
+<section class="hero"><div class="wrap"><div class="hero-copy"><div class="eyebrow">CUSTOM MADE • BUILT TO ORDER</div><h1>Your Idea, <span>Brought to Life.</span></h1><p>Personalized hype chains, NFC pieces, desk plates, illuminated name displays, neon signs and business signage — made to order by Limitless Expressions.</p><div class="cta"><a class="primary" href="#shop">Explore custom pieces</a><a class="secondary" href="#how">See how it works</a></div><div class="hero-details"><span>Made to order</span><span>Your artwork. Your style.</span></div></div><figure class="hero-media" id="heroShowcase"><div class="hero-showcase-photos"><img id="heroShowcasePhoto" src="images/product-07-9a6a2b0807.jpg" alt="Armanie illuminated neon name sign" width="800" height="600" fetchpriority="high"></div><figcaption><span id="heroShowcaseCaption">Your name. In a new light.</span><span id="heroShowcaseCategory">Custom neon</span></figcaption></figure></div></section>
 <section id="shop"><div class="wrap"><div class="sectionhead"><div><div class="eyebrow">SHOP</div><h2>Think Bigger. It's Limitless.</h2></div><p><span class="small-first">Designed. Printed. Built by us.</span><br>What you see is work we've actually made.</p></div><div class="grid" id="products"></div></div></section>
 <section id="how"><div class="wrap"><div class="sectionhead"><div><div class="eyebrow">HOW IT WORKS</div><h2>From idea to finished piece.</h2></div></div><div class="how"><div class="step"><div class="num">01</div><h3>Pick a product</h3><p>Choose the base product that fits what you want made.</p></div><div class="step"><div class="num">02</div><h3>Customize it</h3><p>Enter names, colors, links, sizes and upload artwork where needed.</p></div><div class="step"><div class="num">03</div><h3>We build it</h3><p>Your selections become a production summary so nothing gets lost between order and fabrication.</p></div><div class="step"><div class="num">04</div><h3>Ship or pickup</h3><p>Final delivery options will be connected when checkout goes live.</p></div></div><div class="cta" style="justify-content:center;margin-top:34px"><a class="primary" href="#shop">Start customizing</a></div></div></section>
 <section id="about"><div class="wrap"><div class="sectionhead"><div><div class="eyebrow">LIMITLESS EXPRESSIONS</div><h2>Helping you bring your idea to life.</h2></div><p>Each item is made to order. Customize your product and submit your details to see whether secure checkout is available or a custom quote is required.</p></div></div></section>
@@ -937,4 +940,38 @@ initNfcProductPage();
 <feFlood flood-color="#ff5260" result="pink"/><feComposite in="pink" in2="innerGlow" operator="in" result="glowPink"/>
 <feFlood flood-color="#ffe5dc" result="white"/><feComposite in="white" in2="tube" operator="in" result="thinCore"/>
 <feMerge><feMergeNode in="glowRed"/><feMergeNode in="glowPink"/><feMergeNode in="thinCore"/></feMerge>
-</filter></defs></svg></body></html>
+</filter></defs></svg><script>
+(() => {
+ const photo=document.getElementById('heroShowcasePhoto'),frame=document.getElementById('heroShowcase');
+ if(!photo||!frame)return;
+ const slides=[
+ ['images/product-07-9a6a2b0807.jpg','Armanie illuminated neon name sign','Your name. In a new light.','Custom neon'],
+ ['images/product-01-180512bcfc.jpg','Custom 3D printed hype chain','Make a statement.','Hype chains'],
+ ['images/Top Notch NFC showing.jpeg','Top Notch custom NFC keytag','Your brand, one tap away.','NFC keytags'],
+ ['images/Lucky Luciano LIght Box.jpeg','LuckyLuciano illuminated name lightbox','Your name, illuminated.','Name lightbox'],
+ ['images/Broom NFC Tags.jpeg','Custom broom NFC keytags','Small details. Big impact.','NFC keytags']
+ ];
+ let index=0,paused=false,transitioning=false;
+ const caption=document.getElementById('heroShowcaseCaption'),category=document.getElementById('heroShowcaseCategory');
+ frame.addEventListener('mouseenter',()=>paused=true);
+ frame.addEventListener('mouseleave',()=>paused=false);
+ frame.addEventListener('focusin',()=>paused=true);
+ frame.addEventListener('focusout',()=>paused=false);
+ if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+ window.setInterval(()=>{
+  if(paused||transitioning||document.hidden)return;
+  const next=(index+1)%slides.length,slide=slides[next],preload=new Image();
+  transitioning=true;
+  preload.onload=()=>{
+   if(paused){transitioning=false;return;}
+   photo.style.opacity='0';
+   window.setTimeout(()=>{
+    photo.src=slide[0];photo.alt=slide[1];caption.textContent=slide[2];category.textContent=slide[3];
+    photo.style.opacity='1';index=next;transitioning=false;
+   },460);
+  };
+  preload.onerror=()=>{index=next;transitioning=false;};
+  preload.src=slide[0];
+ },4800);
+})();
+</script></body></html>
