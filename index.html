@@ -93,7 +93,7 @@ body.nfc-product-page .product-page .product-photo-frame img{max-width:none}
 @media(max-width:850px){.product-layout{gap:24px;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr)}.product-photos{top:86px}}
 @media(max-width:680px){.product-page{padding:18px 0 48px}.product-layout{grid-template-columns:1fr;gap:24px}.product-photos{position:static}.product-photo-frame{aspect-ratio:1/1;max-height:470px}.product-crumbs{margin-bottom:18px}.product-details h1{font-size:31px}.product-price{font-size:28px}}
 </style>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Allura&family=Pacifico&family=Sacramento&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Dancing Script&family=Pacifico&family=Sacramento&display=swap" rel="stylesheet">
 <style>
 .neon-choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:8px}
 .neon-choice{display:flex;flex-direction:column;gap:9px;padding:14px;border:1px solid #494136;border-radius:11px;cursor:pointer;background:#101010;font-size:13px}
@@ -593,7 +593,7 @@ function setupNeonStyleChoices(){
   field.classList.add('full');
   field.innerHTML=`<label>Choose a font</label><div class="neon-choice-grid" id="neonFontChoices">
     <label class="neon-choice" data-font-styles="Single-stroke Double-stroke"><input type="radio" name="neonFont" value="Sacramento" checked><strong>Sacramento</strong><span class="neon-font-sample" style="font-family:'Sacramento',cursive">Your Name</span><small>Elegant, flowing cursive</small></label>
-    <label class="neon-choice" data-font-styles="Single-stroke"><input type="radio" name="neonFont" value="Allura"><strong>Allura</strong><span class="neon-font-sample" style="font-family:'Allura',cursive">Your Name</span><small>Smooth, slightly fuller cursive</small></label>
+    <label class="neon-choice" data-font-styles="Single-stroke"><input type="radio" name="neonFont" value="Dancing Script"><strong>Dancing Script</strong><span class="neon-font-sample" style="font-family:'Dancing Script',cursive">Your Name</span><small>Rounded, connected cursive with fewer flourishes</small></label>
     <label class="neon-choice" data-font-styles="Double-stroke"><input type="radio" name="neonFont" value="Pacifico"><strong>Pacifico</strong><span class="neon-font-sample" style="font-family:'Pacifico',cursive">Your Name</span><small>Bold, rounded script</small></label>
   </div><input type="hidden" id="f_Font_style" value="Sacramento">`;
   const style=document.createElement('div');
