@@ -93,6 +93,18 @@ body.nfc-product-page .product-page .product-photo-frame img{max-width:none}
 @media(max-width:850px){.product-layout{gap:24px;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr)}.product-photos{top:86px}}
 @media(max-width:680px){.product-page{padding:18px 0 48px}.product-layout{grid-template-columns:1fr;gap:24px}.product-photos{position:static}.product-photo-frame{aspect-ratio:1/1;max-height:470px}.product-crumbs{margin-bottom:18px}.product-details h1{font-size:31px}.product-price{font-size:28px}}
 </style>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Sacramento&display=swap" rel="stylesheet">
+<style>
+.neon-choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:8px}
+.neon-choice{display:flex;flex-direction:column;gap:9px;padding:14px;border:1px solid #494136;border-radius:11px;cursor:pointer;background:#101010;font-size:13px}
+.neon-choice.selected{border:2px solid #d6ad55;background:#251d10;padding:13px}
+.neon-choice input{accent-color:#d6ad55;align-self:flex-start}
+.neon-choice strong{font-size:13px}.neon-choice small{color:#c9c1b2;line-height:1.4}
+.neon-font-sample{font-size:36px;line-height:1.3;color:#f6e5c0;white-space:nowrap}
+.neon-channel-sample{font-family:Arial,sans-serif;font-weight:300;font-size:36px;letter-spacing:.2em;color:#e6b94f}
+.neon-channel-sample.neon-outline{-webkit-text-stroke:1px #e6b94f;color:transparent;font-weight:800}
+@media(max-width:480px){.neon-choice-grid{grid-template-columns:1fr}}
+</style>
 </head><body>
 <header class="top"><div class="wrap"><nav><a class="brand" href="#">LIMITLESS <span>EXPRESSIONS</span></a><div class="links"><a href="#shop">Shop</a><a href="#how">How it works</a><a href="#about">About</a></div><div class="mobilebar">CUSTOM MADE</div><button class="cartbtn" id="cartBtn">Cart · <span id="cartCount">0</span></button></nav></div></header>
 <main>
@@ -498,7 +510,7 @@ const products=[
 {name:'Custom 3D Printed Name / Desk Plate',tag:'PERSONALIZED',mock:'ARMANDO · CEO',image:'images/product-05-abb2a7e8e7.jpg',imageType:'deskplate',desc:'Personalized desktop nameplate with custom text, title, logo and color options.',price:'$35',fields:['Name / Top Row','Bottom Row','Primary color','Accent color','Logo upload','Notes','Quantity']},
 {name:'Custom Name / Initial Sign',tag:'PERSONALIZED',mock:'GONZALES · CELINE',images:['images/Celine Sign.jpeg','images/Gonzales Sign.jpeg'],desc:'Personalized name and initial signs built around your name, colors and design style.',price:'$25',fields:['Name / text','Initial / letter','Primary color','Secondary color','Notes','Quantity']},
 {name:'Custom 3D Printed Name Light Box',tag:'ILLUMINATED',mock:'LuckyLuciano',images:['images/product-06-894763126a.jpg','images/Lucky Luciano LIght Box.jpeg','images/Lightbox under Computer.jpeg'],imageType:'lightbox',desc:'Personalized illuminated name display based on our custom light-box format.',price:'$40',fields:['Name / text','Face color','Housing color','LED color','Notes','Quantity']},
-{name:'Custom 3D Printed Neon Name Sign',tag:'CUSTOM NEON',image:'images/product-07-9a6a2b0807.jpg',imageType:'neon',mock:'Armanie',desc:'Made-to-order neon-style name sign with custom lettering, size and lighting choices.',price:'20" — $250',fields:['Name / text (optional if uploading logo)','Font style','Upload logo / design','Neon color','Body color','Mounting preference','Notes','Neon sign size','Quantity']},
+{name:'Custom 3D Printed Neon Name Sign',tag:'CUSTOM NEON',image:'images/product-07-9a6a2b0807.jpg',imageType:'neon',mock:'Armanie',desc:'Made-to-order neon-style name sign with custom lettering, size and lighting choices.',price:'20" — $250',fields:['Name / text (optional if uploading logo)','Font style','Neon channel style','Upload logo / design','Neon color','Body color','Mounting preference','Notes','Neon sign size','Quantity']},
 {name:'Custom Business Logo / Sign',tag:'BUSINESS SIGNAGE',mock:'YOUR LOGO',images:['images/Detail Wrapz Backplate.jpeg','images/Detail Wrapz Channels.jpeg','images/Detail Wrapz Logo.jpeg','images/Detail Wrapz Lit up.jpeg'],desc:'Larger branded signage built around your logo, colors, dimensions and lighting needs.',price:'10" — $150; 45" Neon Acrylic or ACM UV Printed Logo — approximately $750–$1,000 (estimated range, not a fixed final price; depends on acrylic or ACM and how much neon is required)',fields:['Name / text (optional if uploading logo)','Font style','Upload logo / design','Neon color','Body color','Mounting preference','Notes','Neon sign size','Quantity']},
 {name:'3D Printed Dogs',tag:'COMING SOON',images:['images/Brownie 3D.jpeg'],desc:'Upload a photo of your dog',price:'Coming Soon',comingSoon:true,fields:[]},
 {name:'Custom 3D Printed Parts',tag:'COMING SOON',mock:'CUSTOM PART',desc:'Need a custom part made? Upload a photo or reference and provide the dimensions, fitment, function and other specs you need.',price:'Quote based',comingSoon:true,fields:['Upload photo / reference','Specifications','Quantity']},
@@ -567,7 +579,34 @@ function setupBusinessSignChoice(){
   choice.querySelector('select').addEventListener('change',apply);
   apply();
 }
-function openProduct(i){active=products[i];document.getElementById('modalTitle').textContent=active.name;let html=active.fields.map(fieldHTML).join('');if(active.name==='Custom 3D Printed Name Light Box')html+=`<div class="field full"><div style="border:1px solid #39342b;border-radius:10px;padding:13px 14px;color:#c9c1b2;font-size:13px;line-height:1.45"><strong style="color:#e6b94f">Standard size:</strong> approximately 10 in wide (slightly under 10 in due to our print-bed size).</div></div>`;if(active.name==='Custom 3D Printed Neon Name Sign'||active.name==='Custom Business Logo / Sign')html+=`<div class="field full"><div style="border:1px solid #5a4722;background:#151108;border-radius:10px;padding:13px 14px;color:#e7dfd0;font-size:13px;line-height:1.45"><strong style="color:#e6b94f">INDOOR SIGN ONLY</strong> — This neon sign is intended for indoor use.</div></div>`;html+='<div class="field full"><label>Pricing</label><div id="customizationPricing" style="white-space:pre-line;color:#e6b94f;font-size:14px;line-height:1.5"></div></div>';document.getElementById('form').innerHTML=html;setupBusinessSignChoice();const upload=document.getElementById('form').querySelector('input[type="file"]');if(upload){const qualityNote=document.createElement('div');qualityNote.className='upload-quality-note';qualityNote.style.cssText='margin-top:9px;color:#c9c1b2;font-size:13px;line-height:1.45';qualityNote.textContent='Try to upload the best quality JPEG or SVG of your logo.';upload.parentElement.appendChild(qualityNote);}document.getElementById('modal').classList.add('open');makeSummary()}
+function setupNeonStyleChoices(){
+  if(active?.name!=='Custom 3D Printed Neon Name Sign')return;
+  const form=document.getElementById('form');
+  const font=document.getElementById('f_Font_style');
+  if(!font)return;
+  const field=font.closest('.field');
+  field.classList.add('full');
+  field.innerHTML=`<label>Choose a font</label><div class="neon-choice-grid" id="neonFontChoices">
+    <label class="neon-choice"><input type="radio" name="neonFont" value="Sacramento" checked><strong>Sacramento</strong><span class="neon-font-sample" style="font-family:'Sacramento',cursive">Your Name</span><small>Elegant, flowing cursive</small></label>
+    <label class="neon-choice"><input type="radio" name="neonFont" value="Pacifico"><strong>Pacifico</strong><span class="neon-font-sample" style="font-family:'Pacifico',cursive">Your Name</span><small>Bold, rounded script</small></label>
+  </div><input type="hidden" id="f_Font_style" value="Sacramento">`;
+  const style=document.createElement('div');
+  style.className='field full';
+  style.innerHTML=`<label>Neon channel style</label><div class="neon-choice-grid" id="neonChannelChoices">
+    <label class="neon-choice"><input type="radio" name="neonChannel" value="Single-stroke" checked><strong>Single-Stroke Neon</strong><span class="neon-channel-sample">A L</span><small>One neon channel follows the centerline of the lettering.</small></label>
+    <label class="neon-choice"><input type="radio" name="neonChannel" value="Double-stroke"><strong>Double-Stroke Neon</strong><span class="neon-channel-sample neon-outline">A L</span><small>Neon follows the letter outlines, creating a double-outline effect.</small></label>
+  </div><input type="hidden" id="f_Neon_channel_style" value="Single-stroke">`;
+  field.before(style);
+  const sync=()=>{
+    form.querySelector('#f_Font_style').value=form.querySelector('input[name="neonFont"]:checked').value;
+    form.querySelector('#f_Neon_channel_style').value=form.querySelector('input[name="neonChannel"]:checked').value;
+    form.querySelectorAll('.neon-choice').forEach(label=>label.classList.toggle('selected',label.querySelector('input').checked));
+    makeSummary();
+  };
+  form.querySelectorAll('input[name="neonFont"],input[name="neonChannel"]').forEach(input=>input.addEventListener('change',sync));
+  sync();
+}
+function openProduct(i){active=products[i];document.getElementById('modalTitle').textContent=active.name;let html=active.fields.map(fieldHTML).join('');if(active.name==='Custom 3D Printed Name Light Box')html+=`<div class="field full"><div style="border:1px solid #39342b;border-radius:10px;padding:13px 14px;color:#c9c1b2;font-size:13px;line-height:1.45"><strong style="color:#e6b94f">Standard size:</strong> approximately 10 in wide (slightly under 10 in due to our print-bed size).</div></div>`;if(active.name==='Custom 3D Printed Neon Name Sign'||active.name==='Custom Business Logo / Sign')html+=`<div class="field full"><div style="border:1px solid #5a4722;background:#151108;border-radius:10px;padding:13px 14px;color:#e7dfd0;font-size:13px;line-height:1.45"><strong style="color:#e6b94f">INDOOR SIGN ONLY</strong> — This neon sign is intended for indoor use.</div></div>`;html+='<div class="field full"><label>Pricing</label><div id="customizationPricing" style="white-space:pre-line;color:#e6b94f;font-size:14px;line-height:1.5"></div></div>';document.getElementById('form').innerHTML=html;setupBusinessSignChoice();setupNeonStyleChoices();const upload=document.getElementById('form').querySelector('input[type="file"]');if(upload){const qualityNote=document.createElement('div');qualityNote.className='upload-quality-note';qualityNote.style.cssText='margin-top:9px;color:#c9c1b2;font-size:13px;line-height:1.45';qualityNote.textContent='Try to upload the best quality JPEG or SVG of your logo.';upload.parentElement.appendChild(qualityNote);}document.getElementById('modal').classList.add('open');makeSummary()}
 function val(name){const el=document.getElementById('f_'+name.replace(/\W+/g,'_'));if(!el)return'';if(el.type==='file')return el.files[0]?.name||'Not uploaded';return el.value||'—'}
 function pricingDetails(p){
   if(p.name==='Custom 3D NFC Keychain / Keytag'){
