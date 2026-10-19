@@ -614,6 +614,7 @@ function setupNeonStyleChoices(){
     display.textContent=nameInput?.value.trim()||'Your Name';
     display.style.fontFamily="'"+fontChoice+"', cursive";
     display.classList.toggle('outline',channel==='Double-stroke');
+    display.classList.toggle('centerline',channel==='Single-stroke');
   };
   nameInput?.addEventListener('input',updatePreview);
   const sync=()=>{
@@ -911,4 +912,19 @@ function initNfcProductPage(){
 
 initNfcProductPage();
 
-</script><script src="order-config.js"></script><script src="order-workflow.js"></script></body></html>
+</script><script src="order-config.js"></script><script src="order-workflow.js"></script><style>
+/* Thin the filled script to evoke a continuous centerline neon tube.
+   This is a customer visualization, not actual letter skeletonization. */
+#neonPreviewText.centerline{color:#ffe6df;text-shadow:none;-webkit-text-stroke:0;filter:url(#neonThinTube)}
+#neonPreviewText.outline{filter:none}
+</style>
+<svg aria-hidden="true" width="0" height="0" style="position:absolute;pointer-events:none"><defs>
+<filter id="neonThinTube" x="-35%" y="-75%" width="170%" height="250%" color-interpolation-filters="sRGB">
+<feMorphology in="SourceAlpha" operator="erode" radius="2.2" result="tube"/>
+<feGaussianBlur in="tube" stdDeviation="6" result="outerGlow"/>
+<feFlood flood-color="#e91939" flood-opacity=".9" result="red"/><feComposite in="red" in2="outerGlow" operator="in" result="glowRed"/>
+<feGaussianBlur in="tube" stdDeviation="2.5" result="innerGlow"/>
+<feFlood flood-color="#ff5260" result="pink"/><feComposite in="pink" in2="innerGlow" operator="in" result="glowPink"/>
+<feFlood flood-color="#ffe5dc" result="white"/><feComposite in="white" in2="tube" operator="in" result="thinCore"/>
+<feMerge><feMergeNode in="glowRed"/><feMergeNode in="glowPink"/><feMergeNode in="thinCore"/></feMerge>
+</filter></defs></svg></body></html>
