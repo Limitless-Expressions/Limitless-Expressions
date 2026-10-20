@@ -274,3 +274,41 @@ test('product pages require chain/sign artwork and retain published checkout eli
   assert.equal(Object.hasOwn(validateDetails({...details(),product:'3D Printed Google Review NFC Display',customization:{}}).customization,'Notes'),false);
   sqlite.close();
 });
+
+test('manual fulfillment requires admin, a paid order, and is idempotent', async () => {
+  const {env,sqlite} = fixture();
+  await worker.fetch(orderRequest(),env);
+  const id=sqlite.prepare('SELECT id FROM orders').get().id;
+  const url='http://localhost:8787/api/admin/orders/'+id+'/fulfill';
+  const unauthorized=await worker.fetch(new Request(url,{method:'POST',headers:{Origin:'http://localhost:8787'}}),env);
+  assert.equal(unauthorized.status,401);
+  const request=()=>new Request(url,{method:'POST',headers:{Origin:'http://localhost:8787',Authorization:'Bearer '+env.ADMIN_TOKEN}});
+  assert.equal((await worker.fetch(request(),env)).status,409);
+  sqlite.prepare("UPDATE orders SET status = 'paid' WHERE id = ?").run(id);
+  const first=await worker.fetch(request(),env);
+  assert.equal(first.status,200);
+  const result=await first.json();
+  assert.ok(result.fulfilledAt>0);
+  assert.equal(result.artworkDeleteAfter-result.fulfilledAt,90*24*60*60*1000);
+  const second=await (await worker.fetch(request(),env)).json();
+  assert.equal(second.fulfilledAt,result.fulfilledAt);
+  assert.equal(second.alreadyFulfilled,true);
+});
+
+test('scheduled cleanup retains unfulfilled and recent artwork, deletes overdue fulfilled artwork', async () => {
+  const {env,sqlite,objects}=fixture();
+  await worker.fetch(orderRequest(),env);
+  const order=sqlite.prepare('SELECT id FROM orders').get().id;
+  const key=sqlite.prepare('SELECT object_key FROM artwork').get().object_key;
+  assert.equal(objects.has(key),true);
+  const schedule=async()=>{const tasks=[];await worker.scheduled({},env,{waitUntil(p){tasks.push(p)}});await Promise.all(tasks)};
+  await schedule();
+  assert.equal(objects.has(key),true);
+  sqlite.prepare('UPDATE orders SET fulfilled_at = ? WHERE id = ?').run(Date.now()-89*86400000,order);
+  await schedule();
+  assert.equal(objects.has(key),true);
+  sqlite.prepare('UPDATE orders SET fulfilled_at = ? WHERE id = ?').run(Date.now()-91*86400000,order);
+  await schedule();
+  assert.equal(objects.has(key),false);
+  assert.ok(sqlite.prepare('SELECT deleted_at FROM artwork').get().deleted_at>0);
+});
