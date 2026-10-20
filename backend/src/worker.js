@@ -3,6 +3,7 @@ import {validateDetails, validateArtwork, MAX_REQUEST} from './orders.js';
 import {fixedPriceQuote} from './pricing.js';
 import {readiness, readinessIssue, stripeGet, assertLink, assertShippingRate, paymentMismatch, dynamicCheckoutReady, createDynamicSession, dynamicPaymentMismatch} from './stripe.js';
 import {notificationStatement, flushNotifications} from './notifications.js';
+import {adminPage} from './admin.js';
 
 const PAYMENT_EVENTS = new Set(['checkout.session.completed','checkout.session.async_payment_succeeded','checkout.session.async_payment_failed']);
 const statements = (env, event, outcome, now) => env.DB.prepare('INSERT OR IGNORE INTO payment_events (id, session_id, order_reference, outcome, created_at) VALUES (?, ?, ?, ?, ?)')
