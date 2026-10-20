@@ -324,6 +324,9 @@ test('administrator dashboard serves a protected-by-token management interface',
   assert.match(html,/Limitless Expressions — Orders/);
   assert.match(html,/type="password"/);
   assert.match(html,/Mark fulfilled/);
+  assert.match(html,/View order \/ artwork/);
+  assert.match(html,/Download artwork/);
+  assert.match(html,/\/api\/admin\/artwork\//);
   assert.ok(!html.includes(env.ADMIN_TOKEN),'the administrator token must not be embedded in HTML');
   const unauthorized=await worker.fetch(new Request('http://localhost:8787/api/admin/orders'),env,{});
   assert.equal(unauthorized.status,401);
