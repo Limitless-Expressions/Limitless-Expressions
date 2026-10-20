@@ -248,7 +248,7 @@ export async function route(request, env) {
     if (orderMatch[2] && request.method === 'POST') return checkout(request, env, orderMatch[1]);
     if (!orderMatch[2] && request.method === 'GET') {
       const order = await customerOrder(request, env, orderMatch[1]);
-      return json({id:order.id,status:order.status,checkoutEligible:!!order.checkout_eligible && (dynamicCheckoutReady(env) || (order.product === 'Custom 3D NFC Keychain / Keytag' && order.quantity === 1)),paymentVerified:['paid','fulfilled'].includes(order.status) && order.refund_status !== 'full'});
+      return json({id:order.id,status:order.status,refundStatus:order.refund_status,checkoutEligible:!!order.checkout_eligible && (dynamicCheckoutReady(env) || (order.product === 'Custom 3D NFC Keychain / Keytag' && order.quantity === 1)),paymentVerified:['paid','fulfilled'].includes(order.status) && order.refund_status !== 'full'});
     }
   }
   if (path.startsWith('/api/admin/')) {
@@ -260,6 +260,7 @@ export async function route(request, env) {
       const order = await env.DB.prepare('SELECT * FROM orders WHERE id = ?').bind(match[1]).first();
       if (!order) throw new HttpError(404, 'Order not found.');
       delete order.access_hash; delete order.request_hash;
+      order.display_status = order.refund_status === 'full' ? 'Refunded' : order.refund_status === 'partial' ? 'Partially refunded' : order.status;
       const artwork = (await env.DB.prepare('SELECT id, filename, content_type, bytes, sha256 FROM artwork WHERE order_id = ?').bind(order.id).all()).results;
       return json({order, artwork});
     }
