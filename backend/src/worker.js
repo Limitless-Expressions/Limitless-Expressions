@@ -156,10 +156,12 @@ async function webhook(request, env) {
     const charge = await stripeGet(env, `charges/${encodeURIComponent(event.data.object.id)}`);
     const intentId = typeof charge.payment_intent === 'string' ? charge.payment_intent : charge.payment_intent?.id;
     const order = intentId ? await env.DB.prepare('SELECT id, status, amount_total, currency, stripe_session_id FROM orders WHERE payment_intent_id = ?').bind(intentId).first() : null;
+    if (order && (charge.currency !== order.currency || !Number.isSafeInteger(charge.amount) || charge.amount <= 0 || !Number.isSafeInteger(charge.amount_refunded) || charge.amount_refunded < 0 || charge.amount_refunded > charge.amount))
+      throw new HttpError(409, 'Refund amount or currency requires manual review.');
     const now = Date.now();
     const full = Number.isSafeInteger(charge.amount) && charge.amount > 0 &&
       charge.amount_refunded >= charge.amount && charge.refunded === true;
-    const outcome = !order ? 'refund_unmatched' : full ? 'refund_full' : 'refund_partial';
+    const outcome = !order ? 'refund_unmatched' : full ? 'refund_full' : charge.amount_refunded > 0 ? 'refund_partial' : 'refund_zero';
     // Retain partial refunds as an auditable event; do not incorrectly cancel production.
     const record = env.DB.prepare('INSERT OR IGNORE INTO payment_events (id, session_id, order_reference, outcome, created_at) VALUES (?, ?, ?, ?, ?)')
       .bind(event.id, order?.stripe_session_id || charge.id, order?.id || null, outcome, now);
