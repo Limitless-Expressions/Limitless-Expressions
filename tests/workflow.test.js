@@ -312,3 +312,20 @@ test('scheduled cleanup retains unfulfilled and recent artwork, deletes overdue 
   assert.equal(objects.has(key),false);
   assert.ok(sqlite.prepare('SELECT deleted_at FROM artwork').get().deleted_at>0);
 });
+
+test('administrator dashboard serves a protected-by-token management interface', async () => {
+  const {env,sqlite}=fixture();
+  const response=await worker.fetch(new Request('http://localhost:8787/admin'),env,{});
+  assert.equal(response.status,200);
+  assert.match(response.headers.get('content-type'),/text\/html/);
+  assert.equal(response.headers.get('x-frame-options'),'DENY');
+  assert.match(response.headers.get('content-security-policy'),/frame-ancestors 'none'/);
+  const html=await response.text();
+  assert.match(html,/Limitless Expressions — Orders/);
+  assert.match(html,/type="password"/);
+  assert.match(html,/Mark fulfilled/);
+  assert.ok(!html.includes(env.ADMIN_TOKEN),'the administrator token must not be embedded in HTML');
+  const unauthorized=await worker.fetch(new Request('http://localhost:8787/api/admin/orders'),env,{});
+  assert.equal(unauthorized.status,401);
+  sqlite.close();
+});
