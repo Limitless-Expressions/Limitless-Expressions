@@ -160,7 +160,7 @@ async function webhook(request, env) {
       throw new HttpError(409, 'Refund amount or currency requires manual review.');
     const now = Date.now();
     const full = Number.isSafeInteger(charge.amount) && charge.amount > 0 &&
-      charge.amount_refunded >= charge.amount && charge.refunded === true;
+      charge.amount_refunded === charge.amount;
     const outcome = !order ? 'refund_unmatched' : full ? 'refund_full' : charge.amount_refunded > 0 ? 'refund_partial' : 'refund_zero';
     // Retain partial refunds as an auditable event; do not incorrectly cancel production.
     const record = env.DB.prepare('INSERT OR IGNORE INTO payment_events (id, session_id, order_reference, outcome, created_at) VALUES (?, ?, ?, ?, ?)')
@@ -204,7 +204,7 @@ async function webhook(request, env) {
     // D1 batches are atomic; conditional notification insertion handles concurrent distinct events and sessions.
     const shipping = session.collected_information?.shipping_details || session.shipping_details;
     await env.DB.batch([
-      env.DB.prepare("UPDATE orders SET status = 'paid', stripe_session_id = ?, payment_intent_id = ?, shipping_details = ?, amount_total = ?, currency = ? WHERE id = ? AND stripe_session_id IS NULL AND status IN ('submitted','awaiting_payment')")
+      env.DB.prepare("UPDATE orders SET status = 'paid', stripe_session_id = ?, payment_intent_id = ?, shipping_details = ?, amount_total = ?, currency = ? WHERE id = ? AND stripe_session_id IS NULL AND status IN ('submitted','awaiting_payment') AND refund_status = 'none'")
         .bind(session.id, typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent.id, JSON.stringify(shipping), session.amount_total, session.currency, order.id),
       env.DB.prepare("INSERT OR IGNORE INTO notifications (id, order_id, kind, payload, next_attempt) SELECT ?, id, 'paid', ?, ? FROM orders WHERE id = ? AND stripe_session_id = ? AND status = 'paid'")
         .bind(`paid-${order.id}`, JSON.stringify({sessionId:session.id,paymentIntent:session.payment_intent,amountTotal:session.amount_total,currency:session.currency}), now, order.id, session.id)
