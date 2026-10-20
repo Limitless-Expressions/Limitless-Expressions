@@ -793,8 +793,8 @@ function initNfcProductPage(){
     } else if(i===0){
       const size=document.getElementById('f_Pendant_size')?.value;
       const q=Number(document.getElementById('f_Quantity')?.value);
-      if(size==='4 in' && q===1){
-        price.textContent=product.price;
+      if((size==='4 in'||size==='5 in') && q===1){
+        price.textContent=size==='4 in'?'$40.00':'$50.00';
         note.textContent=(size==='4 in'?'4-inch':'5-inch')+' pendant · '+shipping;
       } else {
         price.textContent='Custom quote';
@@ -813,7 +813,7 @@ function initNfcProductPage(){
       note.textContent=(q===1&&i!==5)?shipping:'Listed product total; shipping requires a quote before payment.';
     }
     const quantity=Number(val('Quantity'));
-    const quote=[5,6,7].includes(i)||(i===0&&(val('Pendant size')!=='4 in'||quantity!==1))||(i===1&&![1,5].includes(quantity))||(i>=2&&i<=4&&quantity!==1);
+    const quote=[5,6,7].includes(i)||(i===0&&(!['4 in','5 in'].includes(val('Pendant size'))||quantity!==1))||(i===1&&![1,5].includes(quantity))||(i>=2&&i<=4&&quantity!==1);
     const submit=document.getElementById('addCart');
     submit.dataset.quote=String(quote);
     if(!submit.disabled)submit.textContent=quote?'Submit quote request':'Continue to secure payment';
