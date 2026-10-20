@@ -27,3 +27,12 @@ test('published product data and neon/checkout implementations are preserved', (
   assert.equal(fixedPriceQuote('Custom 3D Printed Hype Chain',1,{'Pendant size':'4 in'})?.unitCents,4000);
   assert.equal(fixedPriceQuote('Custom 3D Printed Hype Chain',1,{'Pendant size':'5 in'})?.unitCents,5000);
 });
+
+test('five-inch hype-chain selection is priced consistently in the storefront and backend', () => {
+  const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+  assert.match(html, /<option value="5 in">5 in<\/option>/);
+  assert.ok(html.includes("price.textContent=size==='4 in'?'$40.00':'$50.00'"));
+  assert.ok(html.includes("!['4 in','5 in'].includes(val('Pendant size'))"));
+  assert.equal(fixedPriceQuote('Custom 3D Printed Hype Chain',1,{'Pendant size':'5 in'})?.totalBeforeTaxCents,5600);
+  assert.equal(fixedPriceQuote('Custom 3D Printed Hype Chain',2,{'Pendant size':'5 in'}),null);
+});
