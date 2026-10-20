@@ -14,6 +14,7 @@ import {flushNotifications} from '../backend/src/notifications.js';
 function fixture() {
   const sqlite = new DatabaseSync(':memory:');
   sqlite.exec(readFileSync(new URL('../backend/migrations/0001_orders.sql', import.meta.url),'utf8'));
+  sqlite.exec(readFileSync(new URL('../backend/migrations/0002_artwork_retention.sql', import.meta.url),'utf8'));
   const db = {
     prepare(sql) {
       const make = values => ({
