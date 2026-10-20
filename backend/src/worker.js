@@ -112,7 +112,7 @@ async function customerOrder(request, env, id) {
 }
 async function checkout(request, env, id) {
   const order = await customerOrder(request, env, id);
-  if (['paid','fulfilled','refunded','review_required'].includes(order.status)) throw new HttpError(409, 'This order cannot start another payment.');
+  if (['paid','fulfilled','review_required'].includes(order.status) || order.refund_status === 'full') throw new HttpError(409, 'This order cannot start another payment.');
   if (!order.checkout_eligible) throw new HttpError(409, 'This order needs a custom quote before payment.');
   if (dynamicCheckoutReady(env)) {
     const quote = fixedPriceQuote(order.product, order.quantity, JSON.parse(order.customization || '{}'));
@@ -166,9 +166,11 @@ async function webhook(request, env) {
     if (order && full) {
       await env.DB.batch([
         record,
-        env.DB.prepare("UPDATE orders SET status = 'refunded' WHERE id = ? AND status IN ('paid','fulfilled')")
+        env.DB.prepare("UPDATE orders SET refund_status = 'full' WHERE id = ? AND status IN ('paid','fulfilled') AND refund_status != 'full'")
           .bind(order.id)
       ]);
+    } else if (order && charge.amount_refunded > 0) {
+      await env.DB.batch([record, env.DB.prepare("UPDATE orders SET refund_status = 'partial' WHERE id = ? AND refund_status = 'none'").bind(order.id)]);
     } else await record.run();
     return json({received:true});
   }
@@ -211,7 +213,7 @@ async function webhook(request, env) {
   if (reason) {
     await env.DB.batch([
       statements(env, event, 'review: ' + reason, now),
-      ...(order ? [env.DB.prepare("UPDATE orders SET status = 'review_required' WHERE id = ? AND status NOT IN ('paid','fulfilled','refunded')").bind(order.id)] : []),
+      ...(order ? [env.DB.prepare("UPDATE orders SET status = 'review_required' WHERE id = ? AND status NOT IN ('paid','fulfilled') AND refund_status != 'full'").bind(order.id)] : []),
       notificationStatement(env, `review-${session.id}`, order?.id || null, 'review', {sessionId:session.id,reference:session.client_reference_id || null,reason}, now)
     ]);
   } else await statements(env, event, 'paid', now).run();
@@ -246,7 +248,7 @@ export async function route(request, env) {
     if (orderMatch[2] && request.method === 'POST') return checkout(request, env, orderMatch[1]);
     if (!orderMatch[2] && request.method === 'GET') {
       const order = await customerOrder(request, env, orderMatch[1]);
-      return json({id:order.id,status:order.status,checkoutEligible:!!order.checkout_eligible && (dynamicCheckoutReady(env) || (order.product === 'Custom 3D NFC Keychain / Keytag' && order.quantity === 1)),paymentVerified:['paid','fulfilled'].includes(order.status)});
+      return json({id:order.id,status:order.status,checkoutEligible:!!order.checkout_eligible && (dynamicCheckoutReady(env) || (order.product === 'Custom 3D NFC Keychain / Keytag' && order.quantity === 1)),paymentVerified:['paid','fulfilled'].includes(order.status) && order.refund_status !== 'full'});
     }
   }
   if (path.startsWith('/api/admin/')) {
