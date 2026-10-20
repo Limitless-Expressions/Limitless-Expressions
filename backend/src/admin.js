@@ -10,7 +10,7 @@ table{width:100%;border-collapse:collapse;margin-top:20px}td,th{padding:12px 8px
 small{color:#555}.error{color:#b42318}button:disabled{opacity:.5;cursor:not-allowed}
 </style></head><body><main><h1>Limitless Expressions — Orders</h1>
 <p>Administrator access only. Your token stays in this tab's memory and is not saved.</p>
-<label for="token">Administrator token</label><div><input id="token" type="password" autocomplete="off" placeholder="Paste ADMIN_TOKEN"><button id="load">Load orders</button></div>
+<label for="token">Administrator token</label><div><input id="token" type="password" autocomplete="off" placeholder="Paste ADMIN_TOKEN"><button id="load">Load orders</button><button id="logout" type="button">Clear session</button></div>
 <p id="message" role="status"></p><div style="overflow:auto"><table><thead><tr><th>Order</th><th>Customer</th><th>Product</th><th>Status</th><th>Action</th></tr></thead><tbody id="orders"></tbody></table></div>
 <p><small>Mark fulfilled only after an order has shipped. Artwork becomes eligible for deletion 90 days later.</small></p>
 </main><script>
@@ -44,6 +44,7 @@ async function load() {
   }catch(e){body.replaceChildren();msg.textContent=e.message;msg.className='error'}
 }
 document.getElementById('load').addEventListener('click',load);
+document.getElementById('logout').addEventListener('click',()=>{token='';document.getElementById('token').value='';body.replaceChildren();msg.className='';msg.textContent='Administrator session cleared.';});
 </script></body></html>`;
   return new Response(html,{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','Content-Security-Policy':"default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; referrer no-referrer",'Referrer-Policy':'no-referrer','X-Frame-Options':'DENY'}});
 }
