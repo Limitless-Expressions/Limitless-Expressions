@@ -145,6 +145,33 @@ async function webhook(request, env) {
   await verifyStripeSignature(raw, request.headers.get('Stripe-Signature'), env.STRIPE_WEBHOOK_SECRET);
   let event;
   try { event = JSON.parse(raw); } catch { throw new HttpError(400, 'Invalid event.'); }
+  // Refund events use a Charge object rather than a Checkout Session.
+  // Always reconcile against Stripe's authoritative Charge before updating an order.
+  if (event.type === 'charge.refunded') {
+    if (!/^evt_/.test(event.id || '') || !/^ch_/.test(event.data?.object?.id || '') ||
+        event.livemode !== ['live','production'].includes(env.ENVIRONMENT))
+      throw new HttpError(400, 'Unexpected refund event.');
+    if (await env.DB.prepare('SELECT id FROM payment_events WHERE id = ?').bind(event.id).first())
+      return json({received:true});
+    const charge = await stripeGet(env, `charges/${encodeURIComponent(event.data.object.id)}`);
+    const intentId = typeof charge.payment_intent === 'string' ? charge.payment_intent : charge.payment_intent?.id;
+    const order = intentId ? await env.DB.prepare('SELECT id, status, amount_total, currency, stripe_session_id FROM orders WHERE payment_intent_id = ?').bind(intentId).first() : null;
+    const now = Date.now();
+    const full = Number.isSafeInteger(charge.amount) && charge.amount > 0 &&
+      charge.amount_refunded >= charge.amount && charge.refunded === true;
+    const outcome = !order ? 'refund_unmatched' : full ? 'refund_full' : 'refund_partial';
+    // Retain partial refunds as an auditable event; do not incorrectly cancel production.
+    const record = env.DB.prepare('INSERT OR IGNORE INTO payment_events (id, session_id, order_reference, outcome, created_at) VALUES (?, ?, ?, ?, ?)')
+      .bind(event.id, order?.stripe_session_id || charge.id, order?.id || null, outcome, now);
+    if (order && full) {
+      await env.DB.batch([
+        record,
+        env.DB.prepare("UPDATE orders SET status = 'refunded' WHERE id = ? AND status IN ('paid','fulfilled')")
+          .bind(order.id)
+      ]);
+    } else await record.run();
+    return json({received:true});
+  }
   if (!PAYMENT_EVENTS.has(event.type)) return json({received:true});
   if (!/^evt_/.test(event.id || '') || !/^cs_/.test(event.data?.object?.id || '') || event.livemode !== ['live','production'].includes(env.ENVIRONMENT))
     throw new HttpError(400, 'Unexpected webhook event.');
