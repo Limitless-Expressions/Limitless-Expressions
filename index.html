@@ -533,6 +533,34 @@ function initGallery(gallery){
   next.addEventListener('click',()=>go(current+1));
   dots.forEach((dot,j)=>dot.addEventListener('click',()=>go(j)));
   track.addEventListener('scroll',sync,{passive:true});
+  // Automatically rotate photos while the gallery is visible and not being used.
+  let timer=null,paused=false;
+  const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
+  const stop=()=>{if(timer!==null){clearInterval(timer);timer=null}};
+  const start=()=>{
+    stop();
+    if(paused||reducedMotion.matches||document.hidden||!track.clientWidth)return;
+    timer=setInterval(()=>{
+      if(paused||document.hidden||!track.clientWidth)return;
+      const index=Math.max(0,Math.min(dots.length-1,Math.round(track.scrollLeft/track.clientWidth)));
+      go((index+1)%dots.length);
+    },4000);
+  };
+  const pause=()=>{paused=true;stop()};
+  const resume=()=>{paused=false;start()};
+  gallery.addEventListener('pointerenter',pause);
+  gallery.addEventListener('pointerleave',resume);
+  gallery.addEventListener('focusin',pause);
+  gallery.addEventListener('focusout',e=>{if(!gallery.contains(e.relatedTarget))resume()});
+  gallery.addEventListener('touchstart',pause,{passive:true});
+  gallery.addEventListener('touchend',()=>{paused=false;start()},{passive:true});
+  document.addEventListener('visibilitychange',()=>document.hidden?stop():start());
+  if('IntersectionObserver' in window){
+    const observer=new IntersectionObserver(entries=>{
+      if(entries[0].isIntersecting)start();else stop();
+    },{threshold:0.1});
+    observer.observe(gallery);
+  }else start();
   track.addEventListener('keydown',e=>{
     if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();go(current+(e.key==='ArrowLeft'?-1:1))}
   });
@@ -793,8 +821,8 @@ function initNfcProductPage(){
     } else if(i===0){
       const size=document.getElementById('f_Pendant_size')?.value;
       const q=Number(document.getElementById('f_Quantity')?.value);
-      if(size==='4 in' && q===1){
-        price.textContent=product.price;
+      if((size==='4 in'||size==='5 in') && q===1){
+        price.textContent=size==='4 in'?'$40.00':'$50.00';
         note.textContent=(size==='4 in'?'4-inch':'5-inch')+' pendant · '+shipping;
       } else {
         price.textContent='Custom quote';
@@ -813,7 +841,7 @@ function initNfcProductPage(){
       note.textContent=(q===1&&i!==5)?shipping:'Listed product total; shipping requires a quote before payment.';
     }
     const quantity=Number(val('Quantity'));
-    const quote=[5,6,7].includes(i)||(i===0&&(val('Pendant size')!=='4 in'||quantity!==1))||(i===1&&![1,5].includes(quantity))||(i>=2&&i<=4&&quantity!==1);
+    const quote=[5,6,7].includes(i)||(i===0&&(!['4 in','5 in'].includes(val('Pendant size'))||quantity!==1))||(i===1&&![1,5].includes(quantity))||(i>=2&&i<=4&&quantity!==1);
     const submit=document.getElementById('addCart');
     submit.dataset.quote=String(quote);
     if(!submit.disabled)submit.textContent=quote?'Submit quote request':'Continue to secure payment';

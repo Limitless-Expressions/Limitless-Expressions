@@ -91,3 +91,16 @@ After test evidence is reviewed, request approval to configure production resour
 ## Checks
 
 Run `npm test` with Node 24+. Tests use real SQLite with a D1-compatible adapter, private-storage fakes and mocked Stripe/Resend responses. They verify persistence, atomic rollback, matching, delayed payment, signature tampering, protected downloads and notification retries. They do not certify Cloudflare bindings, Stripe account settings, sales-tax applicability or real email delivery. The preservation test compares the original inline storefront to its GitHub blob SHA; it will intentionally need review if the original storefront is edited.
+
+## Integration branch release checklist (October 2026)
+
+The draft PR #13 combines the manual fulfillment dashboard, migration 0002, retention cleanup, and expanded hype-chain pricing. GitHub CI validates syntax and automated unit tests, but does **not** deploy or verify staging payments.
+
+1. Keep PR #13 in Draft until storefront review, staging order flow, and owner approval are complete.
+2. Back up the target D1 database. Apply migrations 0001 and 0002 to the **correct environment** before deploying the updated Worker; migration 0002 adds `orders.fulfilled_at` and `artwork.deleted_at`.
+3. Deploy the updated Worker to isolated staging first. Verify the admin dashboard loads at `/admin`, requires the configured administrator token for API access, and lists paid orders.
+4. Confirm fulfillment can be performed only on paid orders and repeated fulfillment does not change its original timestamp.
+5. Verify unfulfilled and recently fulfilled artwork remains accessible to authorized administrators; overdue artwork is deleted only after 90 days from fulfillment. The existing cron trigger runs every five minutes, with cleanup limited to 25 records per run.
+6. Verify the 4-inch ($40) and 5-inch ($50) hype-chain checkout amounts and shipping/tax in **Stripe test mode**; test all other product and quote paths for regressions.
+7. Verify product galleries, links, checkout redirects, NFC customization, and homepage presentation in a browser. Automated tests alone do not establish that the full visual experience works.
+8. Only after staging review, approve the production migration and deployment separately. Do not infer that merging this PR automatically deploys Cloudflare Workers; GitHub Pages and Worker deployment are separate.

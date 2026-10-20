@@ -14,6 +14,7 @@ import {flushNotifications} from '../backend/src/notifications.js';
 function fixture() {
   const sqlite = new DatabaseSync(':memory:');
   sqlite.exec(readFileSync(new URL('../backend/migrations/0001_orders.sql', import.meta.url),'utf8'));
+  sqlite.exec(readFileSync(new URL('../backend/migrations/0002_artwork_retention.sql', import.meta.url),'utf8'));
   const db = {
     prepare(sql) {
       const make = values => ({
@@ -261,7 +262,7 @@ test('product pages require chain/sign artwork and retain published checkout eli
     assert.equal(sqlite.prepare('SELECT COUNT(*) as count FROM orders').get().count,1);
     sqlite.close();
   }
-  assert.equal(validateDetails({...details(),product:'Custom 3D Printed Hype Chain',customization:{'Pendant size':'5 in'}}).eligible,false);
+  assert.equal(validateDetails({...details(),product:'Custom 3D Printed Hype Chain',customization:{'Pendant size':'5 in'}}).eligible,true);
   const desk={...details(),product:'Custom 3D Printed Name / Desk Plate',customization:{'Name / Top Row':'Alex','Bottom Row':'CEO','Desk plate mounting':'Stand and mounting holes'}};
   const {env,sqlite}=fixture();
   assert.equal((await worker.fetch(orderRequest(desk,false),env,{})).status,201);
@@ -271,5 +272,63 @@ test('product pages require chain/sign artwork and retain published checkout eli
   assert.equal((await worker.fetch(orderRequest(desk,false),env,{})).status,200);
   assert.equal(Object.hasOwn(validateDetails({...details(),product:'Custom Business Logo / Sign',customization:{}}).customization,'Material preference'),false);
   assert.equal(Object.hasOwn(validateDetails({...details(),product:'3D Printed Google Review NFC Display',customization:{}}).customization,'Notes'),false);
+  sqlite.close();
+});
+
+test('manual fulfillment requires admin, a paid order, and is idempotent', async () => {
+  const {env,sqlite} = fixture();
+  await worker.fetch(orderRequest(),env);
+  const id=sqlite.prepare('SELECT id FROM orders').get().id;
+  const url='http://localhost:8787/api/admin/orders/'+id+'/fulfill';
+  const unauthorized=await worker.fetch(new Request(url,{method:'POST',headers:{Origin:'http://localhost:8787'}}),env);
+  assert.equal(unauthorized.status,401);
+  const request=()=>new Request(url,{method:'POST',headers:{Origin:'http://localhost:8787',Authorization:'Bearer '+env.ADMIN_TOKEN}});
+  assert.equal((await worker.fetch(request(),env)).status,409);
+  sqlite.prepare("UPDATE orders SET status = 'paid' WHERE id = ?").run(id);
+  const first=await worker.fetch(request(),env);
+  assert.equal(first.status,200);
+  const result=await first.json();
+  assert.ok(result.fulfilledAt>0);
+  assert.equal(result.artworkDeleteAfter-result.fulfilledAt,90*24*60*60*1000);
+  const second=await (await worker.fetch(request(),env)).json();
+  assert.equal(second.fulfilledAt,result.fulfilledAt);
+  assert.equal(second.alreadyFulfilled,true);
+});
+
+test('scheduled cleanup retains unfulfilled and recent artwork, deletes overdue fulfilled artwork', async () => {
+  const {env,sqlite,objects}=fixture();
+  await worker.fetch(orderRequest(),env);
+  const order=sqlite.prepare('SELECT id FROM orders').get().id;
+  const key=sqlite.prepare('SELECT object_key FROM artwork').get().object_key;
+  assert.equal(objects.has(key),true);
+  const schedule=async()=>{const tasks=[];await worker.scheduled({},env,{waitUntil(p){tasks.push(p)}});await Promise.all(tasks)};
+  await schedule();
+  assert.equal(objects.has(key),true);
+  sqlite.prepare('UPDATE orders SET fulfilled_at = ? WHERE id = ?').run(Date.now()-89*86400000,order);
+  await schedule();
+  assert.equal(objects.has(key),true);
+  sqlite.prepare('UPDATE orders SET fulfilled_at = ? WHERE id = ?').run(Date.now()-91*86400000,order);
+  await schedule();
+  assert.equal(objects.has(key),false);
+  assert.ok(sqlite.prepare('SELECT deleted_at FROM artwork').get().deleted_at>0);
+});
+
+test('administrator dashboard serves a protected-by-token management interface', async () => {
+  const {env,sqlite}=fixture();
+  const response=await worker.fetch(new Request('http://localhost:8787/admin'),env,{});
+  assert.equal(response.status,200);
+  assert.match(response.headers.get('content-type'),/text\/html/);
+  assert.equal(response.headers.get('x-frame-options'),'DENY');
+  assert.match(response.headers.get('content-security-policy'),/frame-ancestors 'none'/);
+  const html=await response.text();
+  assert.match(html,/Limitless Expressions — Orders/);
+  assert.match(html,/type="password"/);
+  assert.match(html,/Mark fulfilled/);
+  assert.match(html,/View order \/ artwork/);
+  assert.match(html,/Download artwork/);
+  assert.match(html,/\/api\/admin\/artwork\//);
+  assert.ok(!html.includes(env.ADMIN_TOKEN),'the administrator token must not be embedded in HTML');
+  const unauthorized=await worker.fetch(new Request('http://localhost:8787/api/admin/orders'),env,{});
+  assert.equal(unauthorized.status,401);
   sqlite.close();
 });
