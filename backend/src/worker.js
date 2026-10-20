@@ -112,7 +112,7 @@ async function customerOrder(request, env, id) {
 }
 async function checkout(request, env, id) {
   const order = await customerOrder(request, env, id);
-  if (order.status === 'paid' || order.status === 'review_required') throw new HttpError(409, 'This order cannot start another payment.');
+  if (['paid','fulfilled','refunded','review_required'].includes(order.status)) throw new HttpError(409, 'This order cannot start another payment.');
   if (!order.checkout_eligible) throw new HttpError(409, 'This order needs a custom quote before payment.');
   if (dynamicCheckoutReady(env)) {
     const quote = fixedPriceQuote(order.product, order.quantity, JSON.parse(order.customization || '{}'));
@@ -211,7 +211,7 @@ async function webhook(request, env) {
   if (reason) {
     await env.DB.batch([
       statements(env, event, 'review: ' + reason, now),
-      ...(order ? [env.DB.prepare("UPDATE orders SET status = 'review_required' WHERE id = ? AND status != 'paid'").bind(order.id)] : []),
+      ...(order ? [env.DB.prepare("UPDATE orders SET status = 'review_required' WHERE id = ? AND status NOT IN ('paid','fulfilled','refunded')").bind(order.id)] : []),
       notificationStatement(env, `review-${session.id}`, order?.id || null, 'review', {sessionId:session.id,reference:session.client_reference_id || null,reason}, now)
     ]);
   } else await statements(env, event, 'paid', now).run();
@@ -246,7 +246,7 @@ export async function route(request, env) {
     if (orderMatch[2] && request.method === 'POST') return checkout(request, env, orderMatch[1]);
     if (!orderMatch[2] && request.method === 'GET') {
       const order = await customerOrder(request, env, orderMatch[1]);
-      return json({id:order.id,status:order.status,checkoutEligible:!!order.checkout_eligible && (dynamicCheckoutReady(env) || (order.product === 'Custom 3D NFC Keychain / Keytag' && order.quantity === 1)),paymentVerified:order.status === 'paid'});
+      return json({id:order.id,status:order.status,checkoutEligible:!!order.checkout_eligible && (dynamicCheckoutReady(env) || (order.product === 'Custom 3D NFC Keychain / Keytag' && order.quantity === 1)),paymentVerified:['paid','fulfilled'].includes(order.status)});
     }
   }
   if (path.startsWith('/api/admin/')) {
