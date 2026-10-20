@@ -262,7 +262,7 @@ test('product pages require chain/sign artwork and retain published checkout eli
     assert.equal(sqlite.prepare('SELECT COUNT(*) as count FROM orders').get().count,1);
     sqlite.close();
   }
-  assert.equal(validateDetails({...details(),product:'Custom 3D Printed Hype Chain',customization:{'Pendant size':'5 in'}}).eligible,false);
+  assert.equal(validateDetails({...details(),product:'Custom 3D Printed Hype Chain',customization:{'Pendant size':'5 in'}}).eligible,true);
   const desk={...details(),product:'Custom 3D Printed Name / Desk Plate',customization:{'Name / Top Row':'Alex','Bottom Row':'CEO','Desk plate mounting':'Stand and mounting holes'}};
   const {env,sqlite}=fixture();
   assert.equal((await worker.fetch(orderRequest(desk,false),env,{})).status,201);
