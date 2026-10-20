@@ -66,7 +66,7 @@ async function load() {
           if(!confirm('Confirm order '+order.id+' has shipped? This starts its 90-day artwork retention period.'))return;
           btn.disabled=true;try{await api('/api/admin/orders/'+encodeURIComponent(order.id)+'/fulfill','POST');msg.textContent='Order marked fulfilled.';await load()}catch(e){msg.textContent=e.message;btn.disabled=false}
         });action.append(btn)
-      }else{action.textContent=order.fulfilled_at?'Complete':'Not paid'}
+      }else{action.append(document.createTextNode(order.fulfilled_at?'Complete':'Not paid'))}
       row.append(action);body.append(row)
     }
     msg.textContent=orders.length+' orders loaded.';
