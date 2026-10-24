@@ -122,7 +122,7 @@ body.nfc-product-page .product-page .product-photo-frame img{max-width:none}
 <section id="about"><div class="wrap"><div class="sectionhead"><div><div class="eyebrow">LIMITLESS EXPRESSIONS</div><h2>Helping you bring your idea to life.</h2></div><p>Each item is made to order. Customize your product and submit your details to see whether secure checkout is available or a custom quote is required.</p></div></div></section>
 <section class="product-page" id="nfcProductPage" aria-label="NFC keychain product"><div class="wrap"><div class="product-crumbs"><a href="./#shop">Shop</a> &nbsp; / &nbsp; NFC Keychain / Keytag</div><div class="product-layout"><div class="product-photos"><div class="product-photo-frame" id="nfcProductPhotos"></div><p class="product-photo-hint">Swipe or use the arrows to view real customer examples</p></div><div class="product-details"><div class="eyebrow">CUSTOM MADE · NFC ENABLED</div><h1>Custom 3D NFC Keychain / Keytag</h1><p class="product-description">Make your brand easy to share. Upload your logo, choose your size, and set the link people open when they tap your keytag with a compatible phone.</p><div class="product-price" id="nfcProductPrice">$15.00</div><p class="product-price-note" id="nfcProductPriceNote">1 for $15 · 5 for $50 · 10+ for $7 each. Shipping and tax calculated at checkout.</p><div class="product-trust"><span>Made to order</span><span>Custom artwork</span><span>Secure Stripe checkout</span></div><div id="nfcProductFormMount"></div></div></div></div></section>
 </main>
-<footer class="legal"><div class="wrap">Limitless Expressions · A brand of Armanie Distributions Inc. · Custom products made to order.</div></footer>
+<footer class="legal"><div class="wrap"><p><strong>Shipping Policy:</strong> We currently ship only to the contiguous 48 U.S. states. Shipping to Alaska, Hawaii, U.S. territories, and international destinations is not available at this time.</p><p>Limitless Expressions · A brand of Armanie Distributions Inc. · Custom products made to order.</p></div></footer>
 <div class="modal" id="modal"><div class="sheet"><div class="sheethead"><div><div class="eyebrow">CUSTOMIZE</div><h2 id="modalTitle" style="margin:6px 0 0"></h2></div><button class="close" id="close">×</button></div><div id="form" class="formgrid"></div><div class="summary" id="summary"></div><div class="actions"><button class="secondary" id="updateSummary">Update summary</button><button class="primary" id="addCart">Add to test cart</button></div><div class="note">Prototype only — no payment is collected.</div></div></div><div class="toast" id="toast"></div>
 <script id="photo-position-data" type="application/json">
 {
@@ -798,7 +798,7 @@ function initNfcProductPage(){
   document.getElementById('close').hidden=true;
   const price=document.getElementById('nfcProductPrice');
   const note=document.getElementById('nfcProductPriceNote');
-  const shipping='Shipping and tax calculated at checkout.';
+  const shipping='Shipping and tax calculated at checkout. Shipping available to the contiguous 48 U.S. states only.';
   function updatePrice(){
     if(i===1){
       const q=Number(document.getElementById('f_Quantity')?.value);
