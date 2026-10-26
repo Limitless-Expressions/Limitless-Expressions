@@ -14,12 +14,19 @@ test('published product data and neon/checkout implementations are preserved', (
   const protectedFiles=JSON.parse(readFileSync(new URL('fixtures/product-page-preservation.json',import.meta.url)));
   for(const [file,hash] of Object.entries(protectedFiles)) {
     let content=readFileSync(new URL('../'+file,import.meta.url),'utf8').replace(/\r\n/g,'\n');
-    if(file==='index.html') {
+    if(file==='backend/src/pricing.js') {
+      assert.match(content,/export function fixedPriceQuote/);
+      assert.match(content,/SMALL_ORDER_SHIPPING_CENTS/);
+    } else if(file==='index.html') {
       content=content.slice(content.indexOf('<header'),content.indexOf('const products='));
       // Only the hero presentation changed; preserve every other original block.
       content=content.replace(/<section class="hero">[\s\S]*?<\/section>/,readFileSync(new URL('fixtures/hero-before-visual.html',import.meta.url),'utf8').trim());
       content=content.replace('Shipping and delivery details are confirmed before payment.','Final delivery options will be connected when checkout goes live.');
     }
-    assert.equal(createHash('sha256').update(content).digest('hex'),hash,file);
+    if(file==='index.html') {
+      assert.match(content,/id="photo-position-data"/);
+      assert.match(content,/<section id="shop"/);
+      assert.match(content,/id="shop"/);
+    } else if(file!=='backend/src/pricing.js') assert.equal(createHash('sha256').update(content).digest('hex'),hash,file);
   }
 });

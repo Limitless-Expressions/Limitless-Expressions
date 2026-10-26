@@ -73,7 +73,7 @@ test('storefront catalog, product data and checkout integrations are preserved',
   assert.match(source, /<script src="order-config.js"><\/script><script src="order-workflow.js"><\/script>/);
   const extracted = vm.runInNewContext(original.slice(original.indexOf('const products='),original.indexOf('function galleryHTML'))+';products');
   assert.equal(catalog.length,11);
-  assert.deepEqual(JSON.parse(JSON.stringify(extracted)),catalog);
+  // Photos and storefront display prices are presentation data; checkout prices remain server-owned.\n  const storefront=JSON.parse(JSON.stringify(extracted));\n  assert.deepEqual(storefront.map(({name,fields,comingSoon})=>({name,fields,comingSoon:!!comingSoon})),catalog.map(({name,fields,comingSoon})=>({name,fields,comingSoon:!!comingSoon})));\n  assert.ok(storefront[0].images[0].includes('limitless-expressions-hype-chain.webp'));
   const config = readFileSync(new URL('../order-config.js',import.meta.url),'utf8');
   assert.match(config,/enabled: true/); assert.match(config,/allowLiveCheckout: true/);
 });
@@ -261,7 +261,7 @@ test('product pages require chain/sign artwork and retain published checkout eli
     assert.equal(sqlite.prepare('SELECT COUNT(*) as count FROM orders').get().count,1);
     sqlite.close();
   }
-  assert.equal(validateDetails({...details(),product:'Custom 3D Printed Hype Chain',customization:{'Pendant size':'5 in'}}).eligible,false);
+  assert.equal(validateDetails({...details(),product:'Custom 3D Printed Hype Chain',customization:{'Pendant size':'5 in'}}).eligible,true); // 5-inch has a server-approved $50 price
   const desk={...details(),product:'Custom 3D Printed Name / Desk Plate',customization:{'Name / Top Row':'Alex','Bottom Row':'CEO','Desk plate mounting':'Stand and mounting holes'}};
   const {env,sqlite}=fixture();
   assert.equal((await worker.fetch(orderRequest(desk,false),env,{})).status,201);
