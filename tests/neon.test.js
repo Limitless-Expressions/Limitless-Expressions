@@ -13,9 +13,7 @@ test('published product data and neon/checkout implementations are preserved', (
   assert.deepEqual(current,baseline,'only the requested additive fields differ');
   const protectedFiles=JSON.parse(readFileSync(new URL('fixtures/product-page-preservation.json',import.meta.url)));
   for(const [file,hash] of Object.entries(protectedFiles)) {
-    let content=readFileSync(new URL('../'+file,import.meta.url),'utf8').replace(/\r
-/g,'
-');
+    let content=readFileSync(new URL('../'+file,import.meta.url),'utf8').replace(/\r\n/g,'\n');
     if(file==='backend/src/pricing.js') {
       assert.match(content,/export function fixedPriceQuote/);
       assert.match(content,/SMALL_ORDER_SHIPPING_CENTS/);
