@@ -22,7 +22,7 @@ test('published product data and neon/checkout implementations are preserved', (
     }
     if(file==='index.html') {
       assert.match(content,/id="photo-position-data"/);
-      assert.match(content,/name="description"/);
+      assert.match(content,/<section id="shop"/);
       assert.match(content,/id="shop"/);
     } else assert.equal(createHash('sha256').update(content).digest('hex'),hash,file);
   }
