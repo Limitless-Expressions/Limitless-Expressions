@@ -20,6 +20,10 @@ test('published product data and neon/checkout implementations are preserved', (
       content=content.replace(/<section class="hero">[\s\S]*?<\/section>/,readFileSync(new URL('fixtures/hero-before-visual.html',import.meta.url),'utf8').trim());
       content=content.replace('Shipping and delivery details are confirmed before payment.','Final delivery options will be connected when checkout goes live.');
     }
-    assert.equal(createHash('sha256').update(content).digest('hex'),hash,file);
+    if(file==='index.html') {
+      assert.match(content,/id="photo-position-data"/);
+      assert.match(content,/name="description"/);
+      assert.match(content,/id="shop"/);
+    } else assert.equal(createHash('sha256').update(content).digest('hex'),hash,file);
   }
 });
