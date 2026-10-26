@@ -531,11 +531,12 @@ function galleryHTML(p){
   const fit=['lightbox','neon','review'].includes(p.imageType)?'contain':'cover';
   const position=p.imageType==='deskplate'?'center 56%':'center center';
   const slides=p.images.map((src,j)=>`<div class="gallery-slide"><img src="${src}" alt="${p.imageAlts?.[j]||p.name+' — photo '+(j+1)}" style="object-fit:${fit};object-position:${position};${p.imageStyles?.[j]||''}" draggable="false"></div>`).join('');
-  const videoSlide=p.video?`<div class="gallery-slide gallery-video-slide"><video controls preload="none" playsinline muted aria-label="${p.name} printing time-lapse"><source src="${encodeURI(p.video)}" type="video/mp4">Your browser does not support this video.</video></div>`:'';
+  const videoSlide=p.video?`<div class="gallery-slide gallery-video-slide"><video controls preload="none" playsinline muted ${p.video.includes('NFC Keychain timelapse.mp4')?'data-playback-rate="0.5"':''} aria-label="${p.name} printing time-lapse"><source src="${encodeURI(p.video)}" type="video/mp4">Your browser does not support this video.</video></div>`:'';
   return `<div class="gallery"><div class="gallery-track"${multiple?' tabindex="0" role="region" aria-label="'+p.name+' photos"':''}>${slides}${videoSlide}</div>${multiple?`<button type="button" class="gallery-arrow gallery-prev" aria-label="Previous photo">‹</button><button type="button" class="gallery-arrow gallery-next" aria-label="Next photo">›</button><div class="gallery-dots">${p.images.map((_,j)=>`<button type="button" class="gallery-dot" aria-label="Show photo ${j+1}" aria-current="${j===0}"></button>`).join('')}${p.video?'<button type="button" class="gallery-dot" aria-label="Show printing time-lapse" aria-current="false"></button>':''}</div>`:''}</div>`;
 }
 function initGallery(gallery){
   const track=gallery.querySelector('.gallery-track');
+  gallery.querySelectorAll('video[data-playback-rate]').forEach(video=>{const rate=Number(video.dataset.playbackRate);if(Number.isFinite(rate)&&rate>0){video.defaultPlaybackRate=rate;video.playbackRate=rate;video.addEventListener('loadedmetadata',()=>{video.playbackRate=rate});video.addEventListener('play',()=>{video.playbackRate=rate});}});
   const dots=[...gallery.querySelectorAll('.gallery-dot')];
   if(!dots.length)return;
   const prev=gallery.querySelector('.gallery-prev'),next=gallery.querySelector('.gallery-next');
