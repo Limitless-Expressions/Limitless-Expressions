@@ -112,7 +112,7 @@ async function customerOrder(request, env, id) {
 }
 async function checkout(request, env, id) {
   const order = await customerOrder(request, env, id);
-  if (order.status === 'paid' || order.status === 'review_required') throw new HttpError(409, 'This order cannot start another payment.');
+  if (['paid','fulfilled','review_required'].includes(order.status) || order.refund_status === 'full') throw new HttpError(409, 'This order cannot start another payment.');
   if (!order.checkout_eligible) throw new HttpError(409, 'This order needs a custom quote before payment.');
   if (dynamicCheckoutReady(env)) {
     const quote = fixedPriceQuote(order.product, order.quantity, JSON.parse(order.customization || '{}'));
@@ -145,6 +145,37 @@ async function webhook(request, env) {
   await verifyStripeSignature(raw, request.headers.get('Stripe-Signature'), env.STRIPE_WEBHOOK_SECRET);
   let event;
   try { event = JSON.parse(raw); } catch { throw new HttpError(400, 'Invalid event.'); }
+  // Refund events use a Charge object rather than a Checkout Session.
+  // Always reconcile against Stripe's authoritative Charge before updating an order.
+  if (event.type === 'charge.refunded') {
+    if (!/^evt_/.test(event.id || '') || !/^ch_/.test(event.data?.object?.id || '') ||
+        event.livemode !== ['live','production'].includes(env.ENVIRONMENT))
+      throw new HttpError(400, 'Unexpected refund event.');
+    if (await env.DB.prepare('SELECT id FROM payment_events WHERE id = ?').bind(event.id).first())
+      return json({received:true});
+    const charge = await stripeGet(env, `charges/${encodeURIComponent(event.data.object.id)}`);
+    const intentId = typeof charge.payment_intent === 'string' ? charge.payment_intent : charge.payment_intent?.id;
+    const order = intentId ? await env.DB.prepare('SELECT id, status, amount_total, currency, stripe_session_id FROM orders WHERE payment_intent_id = ?').bind(intentId).first() : null;
+    if (order && (charge.currency !== order.currency || !Number.isSafeInteger(charge.amount) || charge.amount <= 0 || !Number.isSafeInteger(charge.amount_refunded) || charge.amount_refunded < 0 || charge.amount_refunded > charge.amount))
+      throw new HttpError(409, 'Refund amount or currency requires manual review.');
+    const now = Date.now();
+    const full = Number.isSafeInteger(charge.amount) && charge.amount > 0 &&
+      charge.amount_refunded === charge.amount;
+    const outcome = !order ? 'refund_unmatched' : full ? 'refund_full' : charge.amount_refunded > 0 ? 'refund_partial' : 'refund_zero';
+    // Retain partial refunds as an auditable event; do not incorrectly cancel production.
+    const record = env.DB.prepare('INSERT OR IGNORE INTO payment_events (id, session_id, order_reference, outcome, created_at) VALUES (?, ?, ?, ?, ?)')
+      .bind(event.id, order?.stripe_session_id || charge.id, order?.id || null, outcome, now);
+    if (order && full) {
+      await env.DB.batch([
+        record,
+        env.DB.prepare("UPDATE orders SET refund_status = 'full' WHERE id = ? AND status IN ('paid','fulfilled') AND refund_status != 'full'")
+          .bind(order.id)
+      ]);
+    } else if (order && charge.amount_refunded > 0) {
+      await env.DB.batch([record, env.DB.prepare("UPDATE orders SET refund_status = 'partial' WHERE id = ? AND refund_status = 'none'").bind(order.id)]);
+    } else await record.run();
+    return json({received:true});
+  }
   if (!PAYMENT_EVENTS.has(event.type)) return json({received:true});
   if (!/^evt_/.test(event.id || '') || !/^cs_/.test(event.data?.object?.id || '') || event.livemode !== ['live','production'].includes(env.ENVIRONMENT))
     throw new HttpError(400, 'Unexpected webhook event.');
@@ -173,7 +204,7 @@ async function webhook(request, env) {
     // D1 batches are atomic; conditional notification insertion handles concurrent distinct events and sessions.
     const shipping = session.collected_information?.shipping_details || session.shipping_details;
     await env.DB.batch([
-      env.DB.prepare("UPDATE orders SET status = 'paid', stripe_session_id = ?, payment_intent_id = ?, shipping_details = ?, amount_total = ?, currency = ? WHERE id = ? AND stripe_session_id IS NULL AND status IN ('submitted','awaiting_payment')")
+      env.DB.prepare("UPDATE orders SET status = 'paid', stripe_session_id = ?, payment_intent_id = ?, shipping_details = ?, amount_total = ?, currency = ? WHERE id = ? AND stripe_session_id IS NULL AND status IN ('submitted','awaiting_payment') AND refund_status = 'none'")
         .bind(session.id, typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent.id, JSON.stringify(shipping), session.amount_total, session.currency, order.id),
       env.DB.prepare("INSERT OR IGNORE INTO notifications (id, order_id, kind, payload, next_attempt) SELECT ?, id, 'paid', ?, ? FROM orders WHERE id = ? AND stripe_session_id = ? AND status = 'paid'")
         .bind(`paid-${order.id}`, JSON.stringify({sessionId:session.id,paymentIntent:session.payment_intent,amountTotal:session.amount_total,currency:session.currency}), now, order.id, session.id)
@@ -184,7 +215,7 @@ async function webhook(request, env) {
   if (reason) {
     await env.DB.batch([
       statements(env, event, 'review: ' + reason, now),
-      ...(order ? [env.DB.prepare("UPDATE orders SET status = 'review_required' WHERE id = ? AND status != 'paid'").bind(order.id)] : []),
+      ...(order ? [env.DB.prepare("UPDATE orders SET status = 'review_required' WHERE id = ? AND status NOT IN ('paid','fulfilled') AND refund_status != 'full'").bind(order.id)] : []),
       notificationStatement(env, `review-${session.id}`, order?.id || null, 'review', {sessionId:session.id,reference:session.client_reference_id || null,reason}, now)
     ]);
   } else await statements(env, event, 'paid', now).run();
@@ -219,7 +250,7 @@ export async function route(request, env) {
     if (orderMatch[2] && request.method === 'POST') return checkout(request, env, orderMatch[1]);
     if (!orderMatch[2] && request.method === 'GET') {
       const order = await customerOrder(request, env, orderMatch[1]);
-      return json({id:order.id,status:order.status,checkoutEligible:!!order.checkout_eligible && (dynamicCheckoutReady(env) || (order.product === 'Custom 3D NFC Keychain / Keytag' && order.quantity === 1)),paymentVerified:order.status === 'paid'});
+      return json({id:order.id,status:order.status,refundStatus:order.refund_status,checkoutEligible:!!order.checkout_eligible && (dynamicCheckoutReady(env) || (order.product === 'Custom 3D NFC Keychain / Keytag' && order.quantity === 1)),paymentVerified:['paid','fulfilled'].includes(order.status) && order.refund_status !== 'full'});
     }
   }
   if (path.startsWith('/api/admin/')) {
@@ -231,6 +262,7 @@ export async function route(request, env) {
       const order = await env.DB.prepare('SELECT * FROM orders WHERE id = ?').bind(match[1]).first();
       if (!order) throw new HttpError(404, 'Order not found.');
       delete order.access_hash; delete order.request_hash;
+      order.display_status = order.refund_status === 'full' ? 'Refunded' : order.refund_status === 'partial' ? 'Partially refunded' : order.status;
       const artwork = (await env.DB.prepare('SELECT id, filename, content_type, bytes, sha256 FROM artwork WHERE order_id = ?').bind(order.id).all()).results;
       return json({order, artwork});
     }
