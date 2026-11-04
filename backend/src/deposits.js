@@ -74,7 +74,11 @@ export async function handleDepositWebhook(env,event,session) {
   await env.DB.prepare("UPDATE deposits SET status='review_required' WHERE id=? AND status!='paid'").bind(id).run();
   return json({received:true,review:true});
  }
- await env.DB.prepare("UPDATE deposits SET status='paid',payment_intent_id=?,paid_at=? WHERE id=? AND stripe_session_id=? AND status='checkout_pending'").bind(typeof session.payment_intent==='string'?session.payment_intent:session.payment_intent.id,Date.now(),id,session.id).run();
+ const now=Date.now();
+ await env.DB.batch([
+  env.DB.prepare("UPDATE deposits SET status='paid',payment_intent_id=?,paid_at=? WHERE id=? AND stripe_session_id=? AND status='checkout_pending'").bind(typeof session.payment_intent==='string'?session.payment_intent:session.payment_intent.id,now,id,session.id),
+  env.DB.prepare("INSERT OR IGNORE INTO notifications (id,order_id,kind,payload,next_attempt) SELECT ?,NULL,'deposit_paid',?,? FROM deposits WHERE id=? AND stripe_session_id=? AND status='paid'").bind('deposit-paid-'+id,JSON.stringify({depositId:id}),now,id,session.id)
+ ]);
  return json({received:true});
 }
 export async function completePickup(request,env,id) {
