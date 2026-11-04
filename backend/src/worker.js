@@ -218,7 +218,7 @@ export async function route(request, env) {
   });
   if (!env.DB || !env.ARTWORK) throw new HttpError(503, 'Order storage is not configured.');
   if (path === '/api/stripe/webhook' && request.method === 'POST') return webhook(request, env);
-  const depositMatch = path.match(/^\\/api\\/deposits\\/([a-f0-9-]{36})(\\/checkout)?$/);
+  const depositMatch = path.match(/^\/api\/deposits\/([a-f0-9-]{36})(\/checkout)?$/);
   if (depositMatch) {
     if (depositMatch[2] && request.method === 'POST') return depositCheckout(request,env,depositMatch[1]);
     if (!depositMatch[2] && request.method === 'GET') return getDeposit(request,env,depositMatch[1]);
