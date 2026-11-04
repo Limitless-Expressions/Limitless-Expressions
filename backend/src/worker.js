@@ -1,3 +1,4 @@
+import {createDeposit,getDeposit,depositCheckout,handleDepositWebhook,listDeposits} from './deposits.js';
 import {HttpError, digest, equalSecrets, readLimited, verifyStripeSignature, configured, json} from './security.js';
 import {validateDetails, validateArtwork, MAX_REQUEST} from './orders.js';
 import {fixedPriceQuote} from './pricing.js';
@@ -156,6 +157,10 @@ async function webhook(request, env) {
   }
   // The authoritative reference comes from the retrieved Session, not the browser or webhook snapshot.
   event.data.object = session;
+  if (session.metadata?.deposit_id) {
+    if (session.payment_status !== 'paid') return json({received:true});
+    return handleDepositWebhook(env,event,session);
+  }
   const order = session.client_reference_id ? await env.DB.prepare('SELECT * FROM orders WHERE id = ?').bind(session.client_reference_id).first() : null;
   const now = Date.now();
   if (session.payment_status !== 'paid') {
@@ -213,6 +218,11 @@ export async function route(request, env) {
   });
   if (!env.DB || !env.ARTWORK) throw new HttpError(503, 'Order storage is not configured.');
   if (path === '/api/stripe/webhook' && request.method === 'POST') return webhook(request, env);
+  const depositMatch = path.match(/^\\/api\\/deposits\\/([a-f0-9-]{36})(\\/checkout)?$/);
+  if (depositMatch) {
+    if (depositMatch[2] && request.method === 'POST') return depositCheckout(request,env,depositMatch[1]);
+    if (!depositMatch[2] && request.method === 'GET') return getDeposit(request,env,depositMatch[1]);
+  }
   if (path === '/api/orders' && request.method === 'POST') return createOrder(request, env);
   const orderMatch = path.match(/^\/api\/orders\/(LE-[a-f0-9-]{36})(\/checkout)?$/);
   if (orderMatch) {
@@ -224,6 +234,8 @@ export async function route(request, env) {
   }
   if (path.startsWith('/api/admin/')) {
     await requireAdmin(request, env);
+    if (path === '/api/admin/deposits' && request.method === 'POST') return createDeposit(request,env);
+    if (path === '/api/admin/deposits' && request.method === 'GET') return listDeposits(env);
     if (request.method !== 'GET') throw new HttpError(405, 'Method not allowed.');
     if (path === '/api/admin/notifications') return json((await env.DB.prepare('SELECT id, kind, state, attempts, last_error FROM notifications ORDER BY next_attempt DESC LIMIT 100').all()).results);
     const match = path.match(/^\/api\/admin\/orders\/(LE-[a-f0-9-]{36})$/);
