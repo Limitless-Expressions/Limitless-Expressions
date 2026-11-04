@@ -20,9 +20,11 @@ export async function flushNotifications(env) {
       const payload = JSON.parse(job.payload);
       const order = job.order_id ? await env.DB.prepare('SELECT * FROM orders WHERE id = ?').bind(job.order_id).first() : null;
       const artwork = order ? (await env.DB.prepare('SELECT id, filename FROM artwork WHERE order_id = ?').bind(order.id).all()).results : [];
-      const subject = job.kind === 'paid' ? 'Payment verified' : job.kind === 'review' ? 'Payment needs manual review' : 'Order submitted — awaiting payment or quote';
+      const deposit = job.kind === 'deposit_paid' && payload.depositId ? await env.DB.prepare('SELECT id, customer_name, customer_email, description, total_cents, deposit_cents, picked_up_at FROM deposits WHERE id=? AND status=\'paid\'').bind(payload.depositId).first() : null;
+      const subject = job.kind === 'deposit_paid' ? 'Custom deposit received' : job.kind === 'paid' ? 'Payment verified' : job.kind === 'review' ? 'Payment needs manual review' : 'Order submitted — awaiting payment or quote';
       const text = [
         'Limitless Expressions — Armanie Distributions Inc.', subject,
+        deposit ? `Customer: ${deposit.customer_name}${deposit.customer_email ? ' <'+deposit.customer_email+'>' : ''}\nOrder: ${deposit.description}\nDeposit received: ${(deposit.deposit_cents/100).toFixed(2)}\nAgreed order total: ${(deposit.total_cents/100).toFixed(2)}\nProduct balance due at pickup: ${((deposit.total_cents-deposit.deposit_cents)/100).toFixed(2)}\nDeposit ID: ${deposit.id}\nPickup: ${deposit.picked_up_at ? 'Completed' : 'Pending'}\nApplicable sales tax is handled at pickup.` : '',
         order ? `Order: ${order.id}\nProduct: ${order.product}\nQuantity: ${order.quantity}\nCustomer: ${order.customer_name} <${order.customer_email}>\nPricing: ${order.pricing_snapshot}\nCustomization: ${order.customization}` : '',
         `Payment information: ${JSON.stringify(payload)}`,
         order?.shipping_details ? `Shipping: ${order.shipping_details}` : '',
@@ -32,7 +34,7 @@ export async function flushNotifications(env) {
       deliveryStage = 'requesting';
       const response = await fetch('https://api.resend.com/emails', {
         method:'POST', headers:{Authorization:`Bearer ${env.RESEND_API_KEY}`, 'Content-Type':'application/json', 'Idempotency-Key':job.id},
-        body:JSON.stringify({from:env.RESEND_FROM, to:['argon.ecomm@gmail.com'], subject:`${subject} — ${order?.id || payload.sessionId || 'Stripe'}`, text}),
+        body:JSON.stringify({from:env.RESEND_FROM, to:['argon.ecomm@gmail.com'], subject:`${subject} — ${order?.id || deposit?.id || payload.sessionId || 'Stripe'}`, text}),
         signal:AbortSignal.timeout(15000)
       });
       providerStatus = response.status;
