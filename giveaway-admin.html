@@ -13,7 +13,7 @@ const message=(text,error=false)=>{$('message').textContent=text;$('message').cl
 const date=value=>value?new Date(value).toLocaleString():'—';
 function controls(){
  const status=current?.status;
- $('activate').disabled=busy||!current||status!=='draft';
+ $('activate').disabled=busy||(current!==null&&status!=='draft');
  $('close').disabled=busy||status!=='open'||Date.now()<(current?.closes_at||Infinity);
  $('draw').disabled=busy||status!=='closed';
 }
