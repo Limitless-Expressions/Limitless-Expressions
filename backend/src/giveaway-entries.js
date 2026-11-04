@@ -9,6 +9,12 @@ export async function submitEntry(request,env) {
  const g=await env.DB.prepare('SELECT * FROM giveaways WHERE id=?').bind(GIVEAWAY_ID).first();
  const now=Date.now();
  if(!g||g.status!=='open'||now<g.opens_at||now>=g.closes_at) throw new HttpError(409,'Entries are closed.');
+ const ip=request.headers.get('CF-Connecting-IP');
+ if(!ip) throw new HttpError(403,'Unable to verify request origin.');
+ const window=Math.floor(now/3600000);
+ const limitKey=await digest('giveaway-rate:'+ip+':'+window);
+ const counter=await env.DB.prepare('INSERT INTO rate_limits (key,count,expires_at) VALUES (?,1,?) ON CONFLICT(key) DO UPDATE SET count=count+1 RETURNING count').bind(limitKey,now+7200000).first();
+ if(counter.count>8) throw new HttpError(429,'Too many attempts. Please try again later.');
  const raw=await readLimited(request,2048);
  let body;
  try {body=JSON.parse(new TextDecoder().decode(raw));}catch{throw new HttpError(400,'Invalid entry.');}
