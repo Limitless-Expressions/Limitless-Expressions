@@ -22,3 +22,20 @@ test('closing is refused when no row is updated',async()=>{
  const env={DB:{prepare:()=>({bind:()=>({run:async()=>({meta:{changes:0}})})})}};
  await assert.rejects(closeGiveaway(env),error=>error.status===409);
 });
+
+test('activation refuses unapproved rules even when services are configured',async()=>{
+ const env={GIVEAWAY_ENTRIES_ENABLED:'true',GIVEAWAY_RULES_APPROVED:'false',TURNSTILE_SITE_KEY:'sitekey',TURNSTILE_SECRET_KEY:'secret',RESEND_API_KEY:'key',RESEND_FROM:'giveaways@example.com',EMAIL_VERIFIED:'true',PUBLIC_API_ORIGIN:'https://api.example.com',STOREFRONT_ORIGIN:'https://example.com'};
+ await assert.rejects(giveawayActivate(env),error=>error.status===409);
+});
+test('activation refuses missing email configuration',async()=>{
+ const env={GIVEAWAY_ENTRIES_ENABLED:'true',GIVEAWAY_RULES_APPROVED:'true',TURNSTILE_SITE_KEY:'sitekey',TURNSTILE_SECRET_KEY:'secret',EMAIL_VERIFIED:'true',PUBLIC_API_ORIGIN:'https://api.example.com',STOREFRONT_ORIGIN:'https://example.com'};
+ await assert.rejects(giveawayActivate(env),error=>error.status===503);
+});
+test('draw refuses a second draw',async()=>{
+ const env={DB:{prepare:sql=>({bind:()=>({
+  first:async()=>({status:'closed',closes_at:1}),
+  all:async()=>({results:[{id:'entry-1'}]}),
+  run:async()=>({meta:{changes:0}})
+ })})}};
+ await assert.rejects(drawGiveaway(env),error=>error.status===409);
+});
