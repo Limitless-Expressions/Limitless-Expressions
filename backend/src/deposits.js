@@ -77,7 +77,16 @@ export async function handleDepositWebhook(env,event,session) {
  await env.DB.prepare("UPDATE deposits SET status='paid',payment_intent_id=?,paid_at=? WHERE id=? AND stripe_session_id=? AND status='checkout_pending'").bind(typeof session.payment_intent==='string'?session.payment_intent:session.payment_intent.id,Date.now(),id,session.id).run();
  return json({received:true});
 }
+export async function completePickup(request,env,id) {
+ if(!urlSafe(id)) throw new HttpError(404,'Deposit not found.');
+ const data=await request.json().catch(()=>null);
+ if(data?.confirm !== 'picked_up') throw new HttpError(400,'Pickup confirmation required.');
+ const now=Date.now();
+ const result=await env.DB.prepare("UPDATE deposits SET picked_up_at=? WHERE id=? AND status='paid' AND picked_up_at IS NULL").bind(now,id).run();
+ if(!result.meta.changes) throw new HttpError(409,'Order is not paid or has already been marked picked up.');
+ return json({id,pickedUpAt:now});
+}
 export async function listDeposits(env) {
- const rows=await env.DB.prepare('SELECT id,customer_name,description,total_cents,deposit_cents,status,created_at,paid_at FROM deposits ORDER BY created_at DESC LIMIT 100').all();
+ const rows=await env.DB.prepare('SELECT id,customer_name,description,total_cents,deposit_cents,status,created_at,paid_at,picked_up_at FROM deposits ORDER BY created_at DESC LIMIT 100').all();
  return json(rows.results);
 }
