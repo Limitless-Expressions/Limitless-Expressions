@@ -1,4 +1,4 @@
-import {createDeposit,getDeposit,depositCheckout,handleDepositWebhook,listDeposits} from './deposits.js';
+import {createDeposit,getDeposit,depositCheckout,handleDepositWebhook,listDeposits,completePickup} from './deposits.js';
 import {HttpError, digest, equalSecrets, readLimited, verifyStripeSignature, configured, json} from './security.js';
 import {validateDetails, validateArtwork, MAX_REQUEST} from './orders.js';
 import {fixedPriceQuote} from './pricing.js';
@@ -236,6 +236,8 @@ export async function route(request, env) {
     await requireAdmin(request, env);
     if (path === '/api/admin/deposits' && request.method === 'POST') return createDeposit(request,env);
     if (path === '/api/admin/deposits' && request.method === 'GET') return listDeposits(env);
+    const pickupMatch = path.match(/^\\/api\\/admin\\/deposits\\/([a-f0-9-]{36})\\/pickup$/);
+    if (pickupMatch && request.method === 'POST') return completePickup(request,env,pickupMatch[1]);
     if (request.method !== 'GET') throw new HttpError(405, 'Method not allowed.');
     if (path === '/api/admin/notifications') return json((await env.DB.prepare('SELECT id, kind, state, attempts, last_error FROM notifications ORDER BY next_attempt DESC LIMIT 100').all()).results);
     const match = path.match(/^\/api\/admin\/orders\/(LE-[a-f0-9-]{36})$/);
