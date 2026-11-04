@@ -8,8 +8,8 @@ export async function closeGiveaway(env) {
 
 export async function drawGiveaway(env) {
  const g=await env.DB.prepare('SELECT status,closes_at FROM giveaways WHERE id=?').bind('001').first();
- if(!g||g.status!=='closed'||Date.now()<g.closes_at)throw new HttpError(409,'Close the giveaway after its deadline first.');
- const rows=(await env.DB.prepare('SELECT id FROM giveaway_entries WHERE giveaway_id=? AND verified_at IS NOT NULL AND verified_at<=? ORDER BY id LIMIT 100001').bind('001',g.closes_at).all()).results;
+ if(!g||g.status!=='closed'||Date.now()<g.closes_at+86400000)throw new HttpError(409,'Wait 24 hours after entries close to allow email confirmation before drawing.');
+ const rows=(await env.DB.prepare('SELECT id FROM giveaway_entries WHERE giveaway_id=? AND verified_at IS NOT NULL AND created_at<? AND verified_at<=created_at+86400000 ORDER BY id LIMIT 100001').bind('001',g.closes_at).all()).results;
  if(!rows.length||rows.length>100000)throw new HttpError(409,'Eligible entry count requires review.');
  const max=Math.floor(4294967296/rows.length)*rows.length;
  let value;
