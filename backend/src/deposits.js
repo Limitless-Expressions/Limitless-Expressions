@@ -69,7 +69,8 @@ export async function handleDepositWebhook(env,event,session) {
  if(!id||session.client_reference_id!=='deposit:'+id) throw new HttpError(400,'Invalid deposit reference.');
  const row=await env.DB.prepare('SELECT * FROM deposits WHERE id=?').bind(id).first();
  if(!row) throw new HttpError(400,'Unknown deposit.');
- if(session.id!==row.stripe_session_id||session.livemode!==live(env)||session.mode!=='payment'||session.currency!=='usd'||session.amount_subtotal!==row.deposit_cents||session.amount_total!==row.deposit_cents||session.total_details?.amount_discount!==0||session.payment_status!=='paid'||!session.payment_intent) {
+ if(session.id!==row.stripe_session_id) throw new HttpError(503,'Deposit checkout confirmation pending.');
+ if(session.livemode!==live(env)||session.mode!=='payment'||session.currency!=='usd'||session.amount_subtotal!==row.deposit_cents||session.amount_total!==row.deposit_cents||(session.total_details?.amount_discount||0)!==0||session.payment_status!=='paid'||!session.payment_intent) {
   await env.DB.prepare("UPDATE deposits SET status='review_required' WHERE id=? AND status!='paid'").bind(id).run();
   return json({received:true,review:true});
  }
