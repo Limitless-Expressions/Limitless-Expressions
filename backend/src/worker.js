@@ -1,3 +1,7 @@
+import {closeGiveaway,drawGiveaway} from './giveaway-draw.js';
+import {entryStatus,submitEntry} from './giveaway-entries.js';
+import {confirmGiveawayEmail} from './giveaway-verification.js';
+import {giveawayAdminSummary,giveawayActivate} from './giveaways.js';
 import {createDeposit,getDeposit,depositCheckout,handleDepositWebhook,listDeposits,completePickup,reissueDepositLink} from './deposits.js';
 import {HttpError, digest, equalSecrets, readLimited, verifyStripeSignature, configured, json} from './security.js';
 import {validateDetails, validateArtwork, MAX_REQUEST} from './orders.js';
@@ -202,6 +206,9 @@ async function requireAdmin(request, env) {
 export async function route(request, env) {
   const url = new URL(request.url), path = url.pathname;
   if (path === '/admin' && request.method === 'GET') return Response.redirect(env.STOREFRONT_ORIGIN + '/orders-admin.html', 302);
+  if (path === '/api/giveaway/status' && request.method === 'GET') return entryStatus(env);
+  if (path === '/api/giveaway/verify' && request.method === 'GET') return confirmGiveawayEmail(request,env);
+  if (path === '/api/giveaway/entries' && request.method === 'POST') return submitEntry(request,env);
   if (path === '/api/config' && request.method === 'GET') return json({
     submissionsEnabled:env.ORDER_SUBMISSIONS_ENABLED === 'true' && configured(env.TURNSTILE_SITE_KEY) && configured(env.TURNSTILE_SECRET_KEY), checkoutEnabled:readiness(env), dynamicCheckoutEnabled:dynamicCheckoutReady(env),
     turnstileSiteKey:configured(env.TURNSTILE_SITE_KEY) ? env.TURNSTILE_SITE_KEY : null,
@@ -235,6 +242,10 @@ export async function route(request, env) {
   }
   if (path.startsWith('/api/admin/')) {
     await requireAdmin(request, env);
+    if (path === '/api/admin/giveaway' && request.method === 'GET') return giveawayAdminSummary(env);
+    if (path === '/api/admin/giveaway/activate' && request.method === 'POST') return giveawayActivate(env);
+    if (path === '/api/admin/giveaway/close' && request.method === 'POST') return closeGiveaway(env);
+    if (path === '/api/admin/giveaway/draw' && request.method === 'POST') return drawGiveaway(env);
     if (path === '/api/admin/deposits' && request.method === 'POST') return createDeposit(request,env);
     if (path === '/api/admin/deposits' && request.method === 'GET') return listDeposits(env);
     const reissueMatch = path.match(/^\/api\/admin\/deposits\/([a-f0-9-]{36})\/reissue$/);
