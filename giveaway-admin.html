@@ -1,0 +1,56 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Giveaway Admin | Limitless Expressions</title><style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#10151d;color:#f4f7fb;font:15px/1.5 system-ui,sans-serif}main{max-width:850px;margin:auto;padding:28px 18px}a{color:#60d7c0}.panel{background:#1c2634;border:1px solid #384658;border-radius:14px;padding:20px;margin:18px 0}input{background:#273448;color:#fff;border:1px solid #5b6b7e;border-radius:8px;padding:11px;max-width:100%}button{background:#60d7c0;color:#081c20;border:0;border-radius:9px;padding:11px 14px;font-weight:700;cursor:pointer;margin:4px}button:disabled{opacity:.5;cursor:not-allowed}.danger{background:#f7b1a9}.muted{color:#b8c5d3}.error{color:#ff9b9b}dl{display:grid;grid-template-columns:180px 1fr;gap:10px}dt{color:#b8c5d3}dd{margin:0;overflow-wrap:anywhere}#message{min-height:24px}#draw-result{white-space:pre-wrap;overflow-wrap:anywhere}@media(max-width:520px){dl{grid-template-columns:1fr;gap:2px}dd{margin-bottom:12px}}</style></head><body><main>
+<a href="/orders-admin.html">← Regular orders</a><h1>Giveaway #001</h1><p class="muted">Administrator dashboard · Hype Chain Giveaway</p>
+<section class="panel"><label for="token">Existing administrator token</label><p><input id="token" type="password" autocomplete="off" placeholder="Paste your admin token"></p><button id="refresh" type="button">Load giveaway</button><p id="message" class="muted" role="status" aria-live="polite">Enter your token to load the giveaway. It is not saved by this page.</p></section>
+<section class="panel"><h2>Current status</h2><dl><dt>Status</dt><dd id="status">Not loaded</dd><dt>Verified entries</dt><dd id="count">—</dd><dt>Opens</dt><dd id="opens">—</dd><dt>Closes</dt><dd id="closes">—</dd></dl></section>
+<section class="panel"><h2>Giveaway controls</h2><p class="muted">Activation starts the seven-day clock immediately. Do not activate until the rules, migration, email verification and production tests are approved.</p><button id="activate" type="button" disabled>Activate seven-day giveaway</button><button id="close" type="button" disabled>Close after deadline</button><button id="draw" type="button" class="danger" disabled>Draw one winner</button><p class="muted">The draw is permanent. Only draw after verifying that entries have closed.</p><div id="draw-result" role="status"></div></section>
+</main><script src="/order-config.js"></script><script>
+(()=>{
+const $=id=>document.getElementById(id);
+const api=window.LIMITLESS_ORDER_CONFIG?.apiBase;
+let current=null,busy=false;
+const message=(text,error=false)=>{$('message').textContent=text;$('message').className=error?'error':'muted'};
+const date=value=>value?new Date(value).toLocaleString():'—';
+function controls(){
+ const status=current?.status;
+ $('activate').disabled=busy||!current||status!=='draft';
+ $('close').disabled=busy||status!=='open'||Date.now()<(current?.closes_at||Infinity);
+ $('draw').disabled=busy||status!=='closed';
+}
+async function request(path,method='GET'){
+ if(!api)throw Error('API is not configured.');
+ const response=await fetch(api+path,{method,headers:{Authorization:'Bearer '+$('token').value.trim()},cache:'no-store'});
+ const body=await response.json();
+ if(!response.ok)throw Error(body.error||'Request failed ('+response.status+')');
+ return body;
+}
+async function refresh(){
+ busy=true;controls();message('Loading…');
+ try{
+  const data=await request('/api/admin/giveaway');
+  current=data.giveaway;
+  $('status').textContent=current?.status||'Not initialized';
+  $('count').textContent=String(data.verifiedEntries??0);
+  $('opens').textContent=date(current?.opens_at);
+  $('closes').textContent=date(current?.closes_at);
+  message('Status loaded.');
+ }catch(e){current=null;message(e.message,true);}
+ finally{busy=false;controls();}
+}
+async function action(path,confirmation){
+ if(!window.confirm(confirmation))return;
+ busy=true;controls();message('Working…');
+ try{
+  const result=await request(path,'POST');
+  if(path.endsWith('/draw'))$('draw-result').textContent='Winner email: '+result.winnerEmail+'\nEligible entries: '+result.eligibleCount+'\nAudit hash: '+result.auditHash;
+  message('Operation completed.');
+ }catch(e){message(e.message,true);}
+ finally{busy=false;controls();}
+ await refresh();
+}
+$('refresh').addEventListener('click',refresh);
+$('activate').addEventListener('click',()=>action('/api/admin/giveaway/activate','This immediately starts the seven-day giveaway. Have you completed legal review and live testing?'));
+$('close').addEventListener('click',()=>action('/api/admin/giveaway/close','Close the giveaway now?'));
+$('draw').addEventListener('click',()=>action('/api/admin/giveaway/draw','Select the final winner at random? This cannot be undone.'));
+})();
+</script></body></html>
