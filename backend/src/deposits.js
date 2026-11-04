@@ -53,6 +53,7 @@ export async function depositCheckout(request,env,id) {
   'line_items[0][price_data][unit_amount]':String(row.deposit_cents),
   'line_items[0][price_data][product_data][name]':'Custom order deposit: '+row.description.slice(0,100),
   'line_items[0][quantity]':'1',
+  'automatic_tax[enabled]':'false',
   'success_url':env.STOREFRONT_ORIGIN+'/deposit.html?id='+id+'&token='+new URL(request.url).searchParams.get('token')+'&return=success',
   'cancel_url':env.STOREFRONT_ORIGIN+'/deposit.html?id='+id+'&token='+new URL(request.url).searchParams.get('token')
  });
