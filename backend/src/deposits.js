@@ -90,7 +90,19 @@ export async function completePickup(request,env,id) {
  if(!result.meta.changes) throw new HttpError(409,'Order is not paid or has already been marked picked up.');
  return json({id,pickedUpAt:now});
 }
+export async function reissueDepositLink(env,id) {
+ assertReady(env);
+ if(!urlSafe(id)) throw new HttpError(404,'Deposit not found.');
+ const row=await env.DB.prepare("SELECT status,expires_at,stripe_session_id FROM deposits WHERE id=?").bind(id).first();
+ if(!row) throw new HttpError(404,'Deposit not found.');
+ if(row.status!=='open'||row.stripe_session_id) throw new HttpError(409,'Only unpaid requests without a started checkout can have their link replaced.');
+ const token=crypto.randomUUID().replaceAll('-','')+crypto.randomUUID().replaceAll('-','');
+ const expires=Date.now()+7*86400000;
+ const result=await env.DB.prepare("UPDATE deposits SET token_hash=?,expires_at=? WHERE id=? AND status='open' AND stripe_session_id IS NULL").bind(await digest(token),expires,id).run();
+ if(!result.meta.changes) throw new HttpError(409,'Deposit status changed. Refresh and try again.');
+ return json({url:env.STOREFRONT_ORIGIN+'/deposit.html?id='+encodeURIComponent(id)+'&token='+token,expiresAt:expires});
+}
 export async function listDeposits(env) {
- const rows=await env.DB.prepare('SELECT id,customer_name,description,total_cents,deposit_cents,status,created_at,paid_at,picked_up_at FROM deposits ORDER BY created_at DESC LIMIT 100').all();
+ const rows=await env.DB.prepare('SELECT id,customer_name,customer_email,description,total_cents,deposit_cents,status,created_at,expires_at,paid_at,picked_up_at FROM deposits ORDER BY created_at DESC LIMIT 100').all();
  return json(rows.results);
 }
