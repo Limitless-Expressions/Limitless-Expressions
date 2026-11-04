@@ -37,7 +37,7 @@ export async function submitEntry(request,env) {
  const verifyUrl=new URL('/api/giveaway/verify',env.PUBLIC_API_ORIGIN);
  verifyUrl.searchParams.set('token',token);
  try {
-  const sent=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:'Bearer '+env.RESEND_API_KEY,'Content-Type':'application/json','Idempotency-Key':'giveaway-'+id},body:JSON.stringify({from:env.RESEND_FROM,to:[email],subject:'Confirm your giveaway entry',text:'Confirm your free entry within 24 hours:\\n'+verifyUrl.href+'\\nNo purchase necessary. If you did not request this, ignore this email.'}),signal:AbortSignal.timeout(15000)});
+  const sent=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:'Bearer '+env.RESEND_API_KEY,'Content-Type':'application/json','Idempotency-Key':'giveaway-'+id},body:JSON.stringify({from:env.GIVEAWAY_RESEND_FROM||env.RESEND_FROM,to:[email],subject:'Confirm your giveaway entry',text:'Confirm your free entry within 24 hours:\\n'+verifyUrl.href+'\\nNo purchase necessary. If you did not request this, ignore this email.'}),signal:AbortSignal.timeout(15000)});
   if(!sent.ok) throw new Error('Delivery failed');
  }catch{
   await env.DB.prepare('DELETE FROM giveaway_entries WHERE id=? AND verified_at IS NULL').bind(id).run();
