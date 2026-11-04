@@ -1,3 +1,4 @@
+import {closeGiveaway,drawGiveaway} from './giveaway-draw.js';
 import {entryStatus,submitEntry} from './giveaway-entries.js';
 import {confirmGiveawayEmail} from './giveaway-verification.js';
 import {giveawayAdminSummary,giveawayActivate} from './giveaways.js';
@@ -243,6 +244,8 @@ export async function route(request, env) {
     await requireAdmin(request, env);
     if (path === '/api/admin/giveaway' && request.method === 'GET') return giveawayAdminSummary(env);
     if (path === '/api/admin/giveaway/activate' && request.method === 'POST') return giveawayActivate(env);
+    if (path === '/api/admin/giveaway/close' && request.method === 'POST') return closeGiveaway(env);
+    if (path === '/api/admin/giveaway/draw' && request.method === 'POST') return drawGiveaway(env);
     if (path === '/api/admin/deposits' && request.method === 'POST') return createDeposit(request,env);
     if (path === '/api/admin/deposits' && request.method === 'GET') return listDeposits(env);
     const reissueMatch = path.match(/^\/api\/admin\/deposits\/([a-f0-9-]{36})\/reissue$/);
