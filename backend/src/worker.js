@@ -243,7 +243,7 @@ export async function route(request, env) {
     if (pickupMatch && request.method === 'POST') return completePickup(request,env,pickupMatch[1]);
     if (request.method !== 'GET') throw new HttpError(405, 'Method not allowed.');
     if (path === '/api/admin/orders' && request.method === 'GET') {
-      const orders = (await env.DB.prepare('SELECT id, product, quantity, customer_name, customer_email, status, checkout_eligible, created_at, paid_at FROM orders ORDER BY created_at DESC LIMIT 100').all()).results;
+      const orders = (await env.DB.prepare('SELECT id, product, quantity, customer_name, customer_email, status, checkout_eligible, created_at, amount_total, currency FROM orders ORDER BY created_at DESC LIMIT 100').all()).results;
       return json({orders});
     }
     if (path === '/api/admin/notifications') return json((await env.DB.prepare('SELECT id, kind, state, attempts, last_error FROM notifications ORDER BY next_attempt DESC LIMIT 100').all()).results);
