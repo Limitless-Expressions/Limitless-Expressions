@@ -1,4 +1,4 @@
-import {createDeposit,getDeposit,depositCheckout,handleDepositWebhook,listDeposits,completePickup} from './deposits.js';
+import {createDeposit,getDeposit,depositCheckout,handleDepositWebhook,listDeposits,completePickup,reissueDepositLink} from './deposits.js';
 import {HttpError, digest, equalSecrets, readLimited, verifyStripeSignature, configured, json} from './security.js';
 import {validateDetails, validateArtwork, MAX_REQUEST} from './orders.js';
 import {fixedPriceQuote} from './pricing.js';
@@ -236,6 +236,8 @@ export async function route(request, env) {
     await requireAdmin(request, env);
     if (path === '/api/admin/deposits' && request.method === 'POST') return createDeposit(request,env);
     if (path === '/api/admin/deposits' && request.method === 'GET') return listDeposits(env);
+    const reissueMatch = path.match(/^\/api\/admin\/deposits\/([a-f0-9-]{36})\/reissue$/);
+    if (reissueMatch && request.method === 'POST') return reissueDepositLink(env,reissueMatch[1]);
     const pickupMatch = path.match(/^\/api\/admin\/deposits\/([a-f0-9-]{36})\/pickup$/);
     if (pickupMatch && request.method === 'POST') return completePickup(request,env,pickupMatch[1]);
     if (request.method !== 'GET') throw new HttpError(405, 'Method not allowed.');
