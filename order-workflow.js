@@ -9,6 +9,22 @@
       (base.protocol !== 'https:' && !(base.protocol === 'http:' && ['localhost','127.0.0.1'].includes(base.hostname)))) throw Error();
   } catch { return; }
   const form = document.getElementById('form'), button = document.getElementById('addCart');
+  // The storefront's button styles can override the native hidden attribute.
+  const visibilityStyle = document.createElement('style');
+  visibilityStyle.textContent = '#orderPay[hidden], #orderRefresh[hidden], #cartBtn[hidden] { display: none !important; }';
+  document.head.appendChild(visibilityStyle);
+  const cartButton = document.getElementById('cartBtn');
+  const readSavedOrder = () => {
+    try {
+      const order = JSON.parse(sessionStorage.getItem('limitless-last-order'));
+      return order && typeof order.id === 'string' && typeof order.token === 'string' ? order : null;
+    } catch { return null; }
+  };
+  const updateRecoveryButton = () => {
+    cartButton.hidden = !readSavedOrder();
+    cartButton.textContent = 'Continue your order';
+  };
+  updateRecoveryButton();
   const panel = document.createElement('div');
   panel.innerHTML = '<div class="formgrid"><div class="field"><label for="orderName">Your name</label><input id="orderName" autocomplete="name" maxlength="120"></div><div class="field"><label for="orderEmail">Email address</label><input id="orderEmail" type="email" autocomplete="email" maxlength="254"></div></div><div id="orderChallenge"></div><p id="orderStatus" role="status" aria-live="polite"></p><button id="orderPay" class="primary" type="button" hidden>Continue to secure payment</button><button id="orderRefresh" class="secondary" type="button" hidden>Check payment status</button>';
   document.getElementById('summary').after(panel);
@@ -29,6 +45,7 @@
   function remember() {
     // Session-only bearer access; no customer details, artwork or credentials are put in URLs.
     try { sessionStorage.setItem('limitless-last-order', JSON.stringify(saved)); } catch { /* Current tab still works. */ }
+    updateRecoveryButton();
   }
   async function checkStatus() {
     if (!saved) return;
@@ -116,11 +133,12 @@
     finally { busy = false; }
   };
   refresh.onclick = checkStatus;
-  document.getElementById('cartBtn').textContent = 'Check saved order';
-  document.getElementById('cartBtn').onclick = () => {
-    try { saved = JSON.parse(sessionStorage.getItem('limitless-last-order')); } catch { saved = null; }
+  cartButton.onclick = () => {
+    saved = readSavedOrder();
+    updateRecoveryButton();
+    if (!saved) return;
     document.getElementById('modal').classList.add('open');
-    if (saved) checkStatus(); else message('No saved order in this browser session. Customize a product to begin.');
+    checkStatus();
   };
   api('/api/config').then(result => {
     backend = result;
@@ -137,7 +155,7 @@
     if (active) reset(active);
     if (new URLSearchParams(location.search).has('session_id')) {
       // The redirect is only a prompt to read server state; it is never proof of payment.
-      try { saved = JSON.parse(sessionStorage.getItem('limitless-last-order')); } catch { saved = null; }
+      saved = readSavedOrder();
       document.getElementById('modal').classList.add('open');
       if (saved) checkStatus(); else message('Check your saved order or contact us for verified payment status.');
     }
