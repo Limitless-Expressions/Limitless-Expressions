@@ -67,3 +67,23 @@ test('100-follower milestone cannot be recorded twice',async()=>{
 test('milestone endpoint fails closed when giveaway disabled',async()=>{
  await assert.rejects(giveawayFollowerMilestone({GIVEAWAY_ENTRIES_ENABLED:'false'}),error=>error.status===409);
 });
+
+test('closing succeeds only after the stored deadline',async()=>{
+ let sql, args;
+ const env={DB:{prepare:statement=>{sql=statement;return {bind:(...values)=>{args=values;return {run:async()=>({meta:{changes:1}})};}}}}};
+ const response=await closeGiveaway(env);
+ assert.equal((await response.json()).status,'closed');
+ assert.match(sql,/closes_at<=\?/);
+ assert.ok(Math.abs(args[0]-Date.now())<1000);
+});
+test('draw refuses to select a winner less than 24 hours after closing',async()=>{
+ const env={DB:db({status:'closed',closes_at:Date.now()-86399000})};
+ await assert.rejects(drawGiveaway(env),error=>error.status===409);
+});
+test('entry status publishes the recorded closing timestamp',async()=>{
+ const closes=Date.parse('2026-11-08T12:00:00Z');
+ const response=await entryStatus({DB:db({status:'open',opens_at:1,closes_at:closes}),GIVEAWAY_ENTRIES_ENABLED:'true'});
+ const body=await response.json();
+ assert.equal(body.status,'open');
+ assert.equal(body.closesAt,closes);
+});
