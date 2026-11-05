@@ -74,7 +74,7 @@ test('closing succeeds only after the stored deadline',async()=>{
  const response=await closeGiveaway(env);
  assert.equal((await response.json()).status,'closed');
  assert.match(sql,/closes_at<=\?/);
- assert.ok(Math.abs(args[0]-Date.now())<1000);
+ assert.ok(Math.abs(args.at(-1)-Date.now())<1000);
 });
 test('draw refuses to select a winner less than 24 hours after closing',async()=>{
  const env={DB:db({status:'closed',closes_at:Date.now()-86399000})};
