@@ -38,7 +38,7 @@ export async function drawGiveaway(env) {
  const statements=[
   env.DB.prepare('INSERT INTO giveaway_draws (id,giveaway_id,entry_id,eligible_count,selected_at,selection_method,audit_hash) VALUES (?,?,?,?,?,?,?)').bind(id,ID,winner.id,rows.length,now,'crypto.getRandomValues rejection sampling',hash),
   env.DB.prepare("INSERT INTO giveaway_winner_rounds (id,giveaway_id,round_number,entry_id,eligible_count,selected_at,selection_method,audit_hash) VALUES (?,?,1,?,?,?,?,?)").bind(crypto.randomUUID(),ID,winner.id,rows.length,now,'crypto.getRandomValues rejection sampling',hash),
-  env.DB.prepare("UPDATE giveaways SET status='drawn' WHERE id=? AND status='closed'").bind(ID)
+  env.DB.prepare("UPDATE giveaways SET status='drawn' WHERE id=? AND status='closed' AND closes_at<=?").bind(ID,now-86400000)
  ];
  try{await env.DB.batch(statements);}catch{throw new HttpError(409,'Drawing was already completed or could not be saved.');}
  return json({status:'drawn',...(await publicRound(env,await current(env))),eligibleCount:rows.length,auditHash:hash});
@@ -76,13 +76,12 @@ export async function drawAlternate(env) {
  const excludedIds=new Set(excluded.map(x=>x.entry_id)),remaining=all.filter(x=>!excludedIds.has(x.id));
  if(!remaining.length)throw new HttpError(409,'No remaining eligible entries.');
  const winner=pick(remaining),hash=await digest(remaining.map(x=>x.id).join('|')),round=previous.round_number+1;
- const oldOutcome=previous.outcome==='notified'?'expired':previous.outcome;
  // Conditional insert ensures a concurrent request cannot advance the same round twice.
  const result=await env.DB.prepare(
-  "INSERT OR IGNORE INTO giveaway_winner_rounds (id,giveaway_id,round_number,entry_id,eligible_count,selected_at,selection_method,audit_hash) SELECT ?,?,?,?,?,?,?,? WHERE EXISTS (SELECT 1 FROM giveaway_winner_rounds WHERE id=? AND outcome=? AND (outcome IN ('expired','ineligible') OR (outcome='notified' AND response_deadline_at<=?)))"
- ).bind(crypto.randomUUID(),ID,round,winner.id,remaining.length,now,'crypto.getRandomValues rejection sampling',hash,previous.id,previous.outcome,now).run();
+  "INSERT OR IGNORE INTO giveaway_winner_rounds (id,giveaway_id,round_number,entry_id,eligible_count,selected_at,selection_method,audit_hash) SELECT ?,?,?,?,?,?,?,? WHERE EXISTS (SELECT 1 FROM giveaway_winner_rounds WHERE id=? AND outcome=? AND round_number=(SELECT MAX(round_number) FROM giveaway_winner_rounds WHERE giveaway_id=?) AND (outcome IN ('expired','ineligible') OR (outcome='notified' AND response_deadline_at<=?)))"
+ ).bind(crypto.randomUUID(),ID,round,winner.id,remaining.length,now,'crypto.getRandomValues rejection sampling',hash,previous.id,previous.outcome,ID,now).run();
  if(!result.meta.changes)throw new HttpError(409,'Winner status changed or alternate already selected.');
- if(oldOutcome!==previous.outcome)await env.DB.prepare("UPDATE giveaway_winner_rounds SET outcome='expired' WHERE id=? AND outcome='notified' AND response_deadline_at<=?").bind(previous.id,now).run();
+ if(previous.outcome==='notified')await env.DB.prepare("UPDATE giveaway_winner_rounds SET outcome='expired' WHERE id=? AND outcome='notified' AND response_deadline_at<=?").bind(previous.id,now).run();
  return json({status:'alternate_selected',...(await publicRound(env,await current(env))),eligibleCount:remaining.length,auditHash:hash});
 }
 export async function disqualifyWinner(env) {
