@@ -22,15 +22,22 @@ export async function submitEntry(request,env) {
  if(email.length>254||! /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||body.acceptRules!==true) throw new HttpError(400,'Valid email and rules acceptance required.');
  if(!env.TURNSTILE_SECRET_KEY||!body.turnstileToken) throw new HttpError(503,'Human verification unavailable.');
  const verification=await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify',{method:'POST',body:new URLSearchParams({secret:env.TURNSTILE_SECRET_KEY,response:body.turnstileToken}),signal:AbortSignal.timeout(10000)});
- if(!verification.ok) {
-  // Never expose the challenge token or secret; report only the upstream HTTP status in staging.
-  if(env.ENVIRONMENT==='test') console.warn('Giveaway Turnstile siteverify HTTP status:',verification.status);
-  throw new HttpError(503,env.ENVIRONMENT==='test'
-    ? 'Verification service unavailable (Turnstile HTTP '+verification.status+').'
-    : 'Verification service unavailable.');
+ // Turnstile returns machine-readable error codes even for non-2xx responses.
+ // Only permitlisted codes are surfaced in staging; never log credentials or challenge tokens.
+ let proof;
+ try {proof=await verification.json();}catch{proof=null;}
+ const safeCodes=new Set(['missing-input-secret','invalid-input-secret','missing-input-response','invalid-input-response','bad-request','timeout-or-duplicate','internal-error']);
+ const codes=Array.isArray(proof?.['error-codes'])?proof['error-codes'].filter(code=>safeCodes.has(code)).slice(0,3):[];
+ if(!verification.ok||!proof?.success||proof.action!=='giveaway'||proof.hostname!==new URL(env.STOREFRONT_ORIGIN).hostname) {
+  const category=!verification.ok?'http_'+verification.status
+   :!proof?.success?'challenge_rejected'
+   :proof.action!=='giveaway'?'action_mismatch':'hostname_mismatch';
+  const detail=category+(codes.length?'_'+codes.join('_'):'');
+  if(env.ENVIRONMENT==='test') console.warn('Giveaway Turnstile verification:',detail);
+  throw new HttpError(verification.ok?400:503,env.ENVIRONMENT==='test'
+    ? 'Human verification failed ('+detail+').'
+    : verification.ok?'Human verification failed.':'Verification service unavailable.');
  }
- const proof=await verification.json();
- if(!proof.success||proof.action!=='giveaway'||proof.hostname!==new URL(env.STOREFRONT_ORIGIN).hostname) throw new HttpError(400,'Human verification failed.');
  const key=await digest('giveaway:'+email);
  const exists=await env.DB.prepare('SELECT id FROM giveaway_entries WHERE giveaway_id=? AND email_hash=?').bind(GIVEAWAY_ID,key).first();
  if(exists) return json({message:'If eligible, check your email for confirmation.'},202);
