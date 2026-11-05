@@ -1,7 +1,7 @@
 import {closeGiveaway,drawGiveaway} from './giveaway-draw.js';
 import {entryStatus,submitEntry} from './giveaway-entries.js';
 import {confirmGiveawayEmail} from './giveaway-verification.js';
-import {giveawayAdminSummary,giveawayActivate} from './giveaways.js';
+import {giveawayAdminSummary,giveawayActivate,giveawayFollowerMilestone} from './giveaways.js';
 import {createDeposit,getDeposit,depositCheckout,handleDepositWebhook,listDeposits,completePickup,reissueDepositLink} from './deposits.js';
 import {HttpError, digest, equalSecrets, readLimited, verifyStripeSignature, configured, json} from './security.js';
 import {validateDetails, validateArtwork, MAX_REQUEST} from './orders.js';
@@ -244,6 +244,7 @@ export async function route(request, env) {
     await requireAdmin(request, env);
     if (path === '/api/admin/giveaway' && request.method === 'GET') return giveawayAdminSummary(env);
     if (path === '/api/admin/giveaway/activate' && request.method === 'POST') return giveawayActivate(env);
+    if (path === '/api/admin/giveaway/milestone' && request.method === 'POST') return giveawayFollowerMilestone(env);
     if (path === '/api/admin/giveaway/close' && request.method === 'POST') return closeGiveaway(env);
     if (path === '/api/admin/giveaway/draw' && request.method === 'POST') return drawGiveaway(env);
     if (path === '/api/admin/deposits' && request.method === 'POST') return createDeposit(request,env);
