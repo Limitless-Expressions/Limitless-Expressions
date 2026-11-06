@@ -13,7 +13,14 @@ export async function giveawayActivate(env) {
  if(!configured(env.TURNSTILE_SITE_KEY)||!configured(env.TURNSTILE_SECRET_KEY)||!configured(env.RESEND_API_KEY)||!configured(env.RESEND_FROM)||env.EMAIL_VERIFIED!=='true'||!configured(env.PUBLIC_API_ORIGIN)||!configured(env.STOREFRONT_ORIGIN)) throw new HttpError(503,'Giveaway verification, email or public URLs are not configured.');
  if(env.GIVEAWAY_RULES_APPROVED!=='true') throw new HttpError(409,'Official rules must be approved before activation.');
  const now=Date.now();
- const result=await env.DB.prepare('INSERT OR IGNORE INTO giveaways (id,title,prize_description,prize_value_cents,status,opens_at,closes_at,created_at) VALUES (?,?,?,?,?,?,?,?)').bind('001','Custom Hype Chain Giveaway','One custom hype chain',4000,'open',now,now+7*86400000,now).run();
+ const result=await env.DB.prepare('INSERT OR IGNORE INTO giveaways (id,title,prize_description,prize_value_cents,status,opens_at,closes_at,created_at) VALUES (?,?,?,?,?,?,?,?)').bind('001','Custom Hype Chain Giveaway','One custom hype chain',4000,'open',now,now+365*86400000,now).run();
  if(!result.meta.changes) throw new HttpError(409,'Giveaway has already been initialized.');
- return json({status:'open',opensAt:now,closesAt:now+7*86400000});
+ return json({status:'open',opensAt:now,closesAt:now+365*86400000});
+}
+
+export async function giveawayMilestoneReached(env) {
+ const now=Date.now(),closeAt=now+86400000;
+ const result=await env.DB.prepare("UPDATE giveaways SET closes_at=? WHERE id='001' AND status='open' AND closes_at>? AND closes_at>?").bind(closeAt,closeAt,now).run();
+ if(!result.meta.changes) throw new HttpError(409,'Giveaway is not open, the milestone is already recorded, or the deadline is sooner.');
+ return json({status:'open',milestoneReached:true,closesAt:closeAt});
 }
