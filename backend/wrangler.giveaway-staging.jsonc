@@ -1,0 +1,31 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "limitless-expressions-api-staging",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "limitless-expressions-orders-staging",
+      "database_id": "a2383748-64c7-4215-965b-9c2ce9c4a2e7",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "ARTWORK",
+      "bucket_name": "limitless-artwork-staging"
+    }
+  ],
+  "triggers": {
+    "crons": ["*/5 * * * *"]
+  },
+  "vars": {
+    "ENVIRONMENT": "test",
+    "ORDER_SUBMISSIONS_ENABLED": "false",
+    "CHECKOUT_ENABLED": "false",
+    "LIVE_READINESS_APPROVED": "false",
+    "GIVEAWAY_ENTRIES_ENABLED": "false"
+  }
+}
