@@ -59,7 +59,7 @@ jobs:
             ...local.d1_databases.map(x=>[x.binding,'d1']),
             ...local.r2_buckets.map(x=>[x.binding,'r2_bucket'])
           ]);
-          const unexpected = bindings.filter(x=>!expected.has(x.name) && x.type !== 'secret_text');
+          const unexpected = bindings.filter(x=>!expected.has(x.name) && !['secret_text','plain_text'].includes(x.type));
           const wrong = bindings.filter(x=>expected.has(x.name) && x.type !== expected.get(x.name));
           const missing = [...expected.keys()].filter(name=>!bindings.some(x=>x.name===name));
           if (unexpected.length || wrong.length || missing.length) {
@@ -76,4 +76,4 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: npx --yes wrangler@4 deploy --config wrangler.giveaway-staging.jsonc
+        run: npx --yes wrangler@4 deploy --keep-vars --config wrangler.giveaway-staging.jsonc

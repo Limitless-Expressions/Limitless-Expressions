@@ -19,13 +19,8 @@
     }
   ],
   "triggers": {
-    "crons": ["*/5 * * * *"]
-  },
-  "vars": {
-    "ENVIRONMENT": "test",
-    "ORDER_SUBMISSIONS_ENABLED": "false",
-    "CHECKOUT_ENABLED": "false",
-    "LIVE_READINESS_APPROVED": "false",
-    "GIVEAWAY_ENTRIES_ENABLED": "false"
+    "crons": [
+      "*/5 * * * *"
+    ]
   }
 }
