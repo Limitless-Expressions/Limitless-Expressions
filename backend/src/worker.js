@@ -277,6 +277,26 @@ export async function route(request, env) {
   }
   throw new HttpError(404, 'Not found.');
 }
+
+// Retain all selected winners and alternates for audit and fulfillment.
+// Fail closed if the winner-round audit schema is unavailable or unexpected.
+async function cleanupGiveawayEntries(env) {
+  const tables = (await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='giveaway_winner_rounds'").all()).results;
+  if (!tables.length) return;
+  const columns = (await env.DB.prepare("PRAGMA table_info(giveaway_winner_rounds)").all()).results;
+  if (!columns.some(column => column.name === 'entry_id')) return;
+  const cutoff = Date.now() - 90 * 86400000;
+  await env.DB.prepare(`
+    DELETE FROM giveaway_entries
+    WHERE giveaway_id IN (
+      SELECT id FROM giveaways
+      WHERE status = 'drawn' AND closes_at IS NOT NULL AND closes_at < ?
+    )
+    AND NOT EXISTS (SELECT 1 FROM giveaway_draws d WHERE d.entry_id = giveaway_entries.id)
+    AND NOT EXISTS (SELECT 1 FROM giveaway_winner_rounds r WHERE r.entry_id = giveaway_entries.id)
+  `).bind(cutoff).run();
+}
+
 export default {
   async fetch(request, env) {
     const webhookPath = new URL(request.url).pathname === '/api/stripe/webhook';
@@ -303,6 +323,7 @@ export default {
     ctx.waitUntil((async () => {
       await flushNotifications(env);
       await env.DB.prepare('DELETE FROM rate_limits WHERE expires_at < ?').bind(Date.now()).run();
+      await cleanupGiveawayEntries(env);
     })());
   }
 };
