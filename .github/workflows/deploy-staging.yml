@@ -71,6 +71,35 @@ jobs:
           }
           console.log('Staging binding names/types verified. Secret values were not printed.');
           NODE
+      - name: Verify existing staging resource identities and cron schedule
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          api="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/limitless-expressions-api-staging"
+          curl --fail-with-body -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "$api/schedules" > /tmp/staging-crons.json
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const cfg=JSON.parse(fs.readFileSync('backend/wrangler.giveaway-staging.jsonc','utf8'));
+          const remote=JSON.parse(fs.readFileSync('/tmp/staging-settings.json','utf8'));
+          const crons=JSON.parse(fs.readFileSync('/tmp/staging-crons.json','utf8'));
+          const fail=(reason)=>{console.error('::error::'+reason+'; deployment blocked');process.exit(1)};
+          if(!crons.success || !Array.isArray(crons.result)) fail('Cannot verify existing staging schedules');
+          const localCrons=(cfg.triggers?.crons||[]).slice().sort();
+          const remoteCrons=crons.result.map(x=>x.cron).sort();
+          if(JSON.stringify(localCrons)!==JSON.stringify(remoteCrons)) fail('Existing cron schedules differ from repository configuration');
+          for(const d of cfg.d1_databases||[]){
+            const b=remote.result.bindings.find(x=>x.name===d.binding);
+            if(!b || b.id!==d.database_id) fail('D1 database identity mismatch for '+d.binding);
+          }
+          for(const bucket of cfg.r2_buckets||[]){
+            const b=remote.result.bindings.find(x=>x.name===bucket.binding);
+            if(!b || b.bucket_name!==bucket.bucket_name) fail('R2 bucket identity mismatch for '+bucket.binding);
+          }
+          console.log('Existing staging cron, D1 and R2 identities match repository config.');
+          NODE
       - name: Deploy giveaway staging Worker
         working-directory: backend
         env:
