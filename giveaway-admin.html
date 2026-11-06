@@ -3,7 +3,7 @@
 <a href="/orders-admin.html">← Regular orders</a><h1>Giveaway #001</h1><p class="muted">Administrator dashboard · Hype Chain Giveaway</p>
 <section class="panel"><label for="token">Existing administrator token</label><p><input id="token" type="password" autocomplete="off" placeholder="Paste your admin token"></p><button id="refresh" type="button">Load giveaway</button><p id="message" class="muted" role="status" aria-live="polite">Enter your token to load the giveaway. It is not saved by this page.</p></section>
 <section class="panel"><h2>Current status</h2><dl><dt>Status</dt><dd id="status">Not loaded</dd><dt>Verified entries</dt><dd id="count">—</dd><dt>Opens</dt><dd id="opens">—</dd><dt>Closes</dt><dd id="closes">—</dd></dl></section>
-<section class="panel"><h2>Live database readiness</h2><p class="muted">Checks the actual production database using the existing administrator token. Read-only: never activates entries or changes data.</p><button id="check-db" type="button">Check live database</button><p id="db-result" role="status" aria-live="polite">Not checked yet.</p></section><section class="panel"><h2>Giveaway controls</h2><p class="muted">Activation opens entries. After reaching 100 TikTok followers, confirm the milestone here to start a 24-hour final entry window. A 30-day fallback deadline applies if the goal is never reached. Do not activate until the rules, migration, email verification and production tests are approved.</p><button id="activate" type="button" disabled>Activate giveaway</button><button id="milestone" type="button" disabled>Confirm 100 followers — start 24-hour countdown</button><button id="close" type="button" disabled>Close after deadline</button><button id="draw" type="button" class="danger" disabled>Draw one winner</button><p class="muted">The draw is permanent. Only draw after verifying that entries have closed.</p><div id="draw-result" role="status"></div></section>
+<section class="panel"><h2>Live database readiness</h2><p class="muted">Checks the actual production database using the existing administrator token. Read-only: never activates entries or changes data.</p><button id="check-db" type="button">Check live database</button><p id="db-result" role="status" aria-live="polite">Not checked yet.</p></section><section class="panel"><h2>Email delivery test</h2><p class="muted">Send one test message to your configured business notification inbox. This does not create a giveaway entry, issue a verification link, or open entries.</p><button id="email-test" type="button">Send test email</button><p id="email-test-result" role="status" aria-live="polite">Not tested yet.</p></section><section class="panel"><h2>Giveaway controls</h2><p class="muted">Activation opens entries. After reaching 100 TikTok followers, confirm the milestone here to start a 24-hour final entry window. A 30-day fallback deadline applies if the goal is never reached. Do not activate until the rules, migration, email verification and production tests are approved.</p><button id="activate" type="button" disabled>Activate giveaway</button><button id="milestone" type="button" disabled>Confirm 100 followers — start 24-hour countdown</button><button id="close" type="button" disabled>Close after deadline</button><button id="draw" type="button" class="danger" disabled>Draw one winner</button><p class="muted">The draw is permanent. Only draw after verifying that entries have closed.</p><div id="draw-result" role="status"></div></section>
 </main><script src="/order-config.js"></script><script>
 (()=>{
 const $=id=>document.getElementById(id);
@@ -56,6 +56,14 @@ $('check-db').addEventListener('click',async()=>{
   const data=await request('/api/admin/giveaway/readiness');
   out.textContent=Object.entries(data.tables).map(([name,state])=>name+': '+state.toUpperCase()).join(' | ')+' — '+(data.ready?'All giveaway tables present.':'Database setup needs attention.')+' Entries enabled: '+(data.entriesEnabled?'YES':'NO')+'. Rules approved: '+(data.rulesApproved?'YES':'NO')+'.';
  }catch(e){out.textContent='Check failed: '+e.message;}
+ finally{button.disabled=false;}
+});
+$('email-test').addEventListener('click',async()=>{
+ if(!window.confirm('Send one giveaway test email to the configured notification inbox?'))return;
+ const button=$('email-test'),out=$('email-test-result');
+ button.disabled=true;out.textContent='Sending test email…';
+ try{const result=await request('/api/admin/giveaway/email-test','POST');out.textContent=result.message;}
+ catch(e){out.textContent='Test failed: '+e.message;}
  finally{button.disabled=false;}
 });
 $('refresh').addEventListener('click',refresh);
