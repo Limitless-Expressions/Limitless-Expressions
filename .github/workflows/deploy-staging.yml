@@ -86,9 +86,9 @@ jobs:
           const remote=JSON.parse(fs.readFileSync('/tmp/staging-settings.json','utf8'));
           const crons=JSON.parse(fs.readFileSync('/tmp/staging-crons.json','utf8'));
           const fail=(reason)=>{console.error('::error::'+reason+'; deployment blocked');process.exit(1)};
-          if(!crons.success || !Array.isArray(crons.result)) fail('Cannot verify existing staging schedules');
+          if(!crons.success || !Array.isArray(crons.result?.schedules)) fail('Cannot verify existing staging schedules');
           const localCrons=(cfg.triggers?.crons||[]).slice().sort();
-          const remoteCrons=crons.result.map(x=>x.cron).sort();
+          const remoteCrons=crons.result.schedules.map(x=>x.cron).sort();
           if(JSON.stringify(localCrons)!==JSON.stringify(remoteCrons)) fail('Existing cron schedules differ from repository configuration');
           for(const d of cfg.d1_databases||[]){
             const b=remote.result.bindings.find(x=>x.name===d.binding);
