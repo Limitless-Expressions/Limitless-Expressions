@@ -35,6 +35,42 @@ jobs:
           test -n "$CLOUDFLARE_API_TOKEN" || { echo "::error::Missing staging CLOUDFLARE_API_TOKEN"; exit 1; }
           test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "::error::Missing staging CLOUDFLARE_ACCOUNT_ID"; exit 1; }
           test -f backend/wrangler.giveaway-staging.jsonc || { echo "::error::Staging Wrangler config not committed. Deployment blocked."; exit 1; }
+      - name: Protect existing staging bindings before deployment
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail-with-body -sS \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/limitless-expressions-api-staging/settings" \
+            > /tmp/staging-settings.json
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const remote = JSON.parse(fs.readFileSync('/tmp/staging-settings.json','utf8'));
+          const local = JSON.parse(fs.readFileSync('backend/wrangler.giveaway-staging.jsonc','utf8'));
+          if (!remote.success || !Array.isArray(remote.result?.bindings)) {
+            console.error('::error::Unable to verify existing staging bindings; deployment blocked.');
+            process.exit(1);
+          }
+          const bindings = remote.result.bindings;
+          const expected = new Map([
+            ...local.d1_databases.map(x=>[x.binding,'d1']),
+            ...local.r2_buckets.map(x=>[x.binding,'r2_bucket'])
+          ]);
+          const unexpected = bindings.filter(x=>!expected.has(x.name) && x.type !== 'secret_text');
+          const wrong = bindings.filter(x=>expected.has(x.name) && x.type !== expected.get(x.name));
+          const missing = [...expected.keys()].filter(name=>!bindings.some(x=>x.name===name));
+          if (unexpected.length || wrong.length || missing.length) {
+            console.error('::error::Existing staging bindings differ from the checked-in config. Deployment blocked.');
+            console.error('Additional binding names:', unexpected.map(x=>x.name).join(', ') || 'none');
+            console.error('Type mismatches:', wrong.map(x=>x.name).join(', ') || 'none');
+            console.error('Missing expected bindings:', missing.join(', ') || 'none');
+            process.exit(1);
+          }
+          console.log('Staging binding names/types verified. Secret values were not printed.');
+          NODE
       - name: Deploy giveaway staging Worker
         working-directory: backend
         env:
