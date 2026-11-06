@@ -203,6 +203,19 @@ async function requireAdmin(request, env) {
   if (!configured(env.ADMIN_TOKEN) || env.ADMIN_TOKEN.length < 32 || !await equalSecrets(request.headers.get('Authorization'), `Bearer ${env.ADMIN_TOKEN}`))
     throw new HttpError(401, 'Administrator authentication required.');
 }
+async function giveawayDatabaseReadiness(env) {
+  const names=['giveaways','giveaway_entries','giveaway_draws'];
+  const result={};
+  for (const name of names) {
+    try {
+      const row=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?").bind(name).first();
+      result[name]=row?.name===name?'present':'missing';
+    } catch {
+      result[name]='query_failed';
+    }
+  }
+  return json({tables:result,ready:Object.values(result).every(x=>x==='present'),entriesEnabled:env.GIVEAWAY_ENTRIES_ENABLED==='true',rulesApproved:env.GIVEAWAY_RULES_APPROVED==='true'});
+}
 export async function route(request, env) {
   const url = new URL(request.url), path = url.pathname;
   if (path === '/admin' && request.method === 'GET') return Response.redirect(env.STOREFRONT_ORIGIN + '/orders-admin.html', 302);
@@ -243,6 +256,7 @@ export async function route(request, env) {
   if (path.startsWith('/api/admin/')) {
     await requireAdmin(request, env);
     if (path === '/api/admin/giveaway' && request.method === 'GET') return giveawayAdminSummary(env);
+    if (path === '/api/admin/giveaway/readiness' && request.method === 'GET') return giveawayDatabaseReadiness(env);
     if (path === '/api/admin/giveaway/activate' && request.method === 'POST') return giveawayActivate(env);
     if (path === '/api/admin/giveaway/close' && request.method === 'POST') return closeGiveaway(env);
     if (path === '/api/admin/giveaway/draw' && request.method === 'POST') return drawGiveaway(env);
