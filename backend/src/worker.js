@@ -1,3 +1,4 @@
+import {sendVerificationTest,verifyTestLink} from './giveaway-test.js';
 import {closeGiveaway,drawGiveaway} from './giveaway-draw.js';
 import {entryStatus,submitEntry} from './giveaway-entries.js';
 import {confirmGiveawayEmail} from './giveaway-verification.js';
@@ -237,6 +238,7 @@ async function giveawayDatabaseReadiness(env) {
 export async function route(request, env) {
   const url = new URL(request.url), path = url.pathname;
   if (path === '/admin' && request.method === 'GET') return Response.redirect(env.STOREFRONT_ORIGIN + '/orders-admin.html', 302);
+  if (path === '/api/giveaway/test-verify' && request.method === 'GET') return verifyTestLink(request,env);
   if (path === '/api/giveaway/status' && request.method === 'GET') return entryStatus(env);
   if (path === '/api/giveaway/verify' && request.method === 'GET') return confirmGiveawayEmail(request,env);
   if (path === '/api/giveaway/entries' && request.method === 'POST') return submitEntry(request,env);
@@ -274,6 +276,7 @@ export async function route(request, env) {
   if (path.startsWith('/api/admin/')) {
     await requireAdmin(request, env);
     if (path === '/api/admin/giveaway' && request.method === 'GET') return giveawayAdminSummary(env);
+    if (path === '/api/admin/giveaway/verification-test' && request.method === 'POST') return sendVerificationTest(env);
     if (path === '/api/admin/giveaway/email-test' && request.method === 'POST') return giveawayEmailSmokeTest(env);
     if (path === '/api/admin/giveaway/readiness' && request.method === 'GET') return giveawayDatabaseReadiness(env);
     if (path === '/api/admin/giveaway/milestone' && request.method === 'POST') return giveawayMilestoneReached(env);
