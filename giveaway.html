@@ -12,7 +12,7 @@ async function loadStatus(){
   const state=await s.json(),config=await c.json();
   const active=state.status==='open'&&state.opensAt<=Date.now()&&state.closesAt>Date.now();
   statusNode.textContent=active?'Entries are open!':'Entries are not open yet.';
-  if(state.opensAt&&state.closesAt)document.getElementById('dates').textContent='Entry window: '+new Date(state.opensAt).toLocaleString()+' – '+new Date(state.closesAt).toLocaleString();
+  if(state.opensAt&&state.closesAt){const milestone=state.closesAt-state.opensAt<360*86400000;document.getElementById('dates').textContent=milestone?'Final entry deadline: '+new Date(state.closesAt).toLocaleString():'Entries are open while we work toward 100 TikTok followers. The final 24-hour window starts when the milestone is confirmed. Safety deadline: '+new Date(state.closesAt).toLocaleString();}
   if(!active)return;
   siteKey=config.turnstileSiteKey;
   if(!siteKey){statusNode.textContent='Entry verification is temporarily unavailable.';return;}
