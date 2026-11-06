@@ -48,7 +48,9 @@ test('milestone records a 24-hour deadline with one-time guard',async()=>{
  const result=await response.json();
  assert.equal(result.milestoneReached,true);
  assert.match(sql,/closes_at-opens_at>=\?/);
- assert.equal(params[0],29*86400000);
+ assert.equal(params[0],result.closesAt);
+ assert.equal(params[1],29*86400000);
+ assert.equal(params[2] <= Date.now(),true);
  assert.ok(result.closesAt>Date.now()+23*3600000);
  assert.ok(result.closesAt<Date.now()+25*3600000);
 });
