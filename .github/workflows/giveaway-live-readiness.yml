@@ -1,0 +1,67 @@
+name: Giveaway LIVE readiness audit (read only)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/giveaway-live-readiness.yml'
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Inspect live giveaway settings and database schema
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$CF_TOKEN" && test -n "$CF_ACCOUNT"
+          base="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT"
+          status=$(curl -sS -o /tmp/settings.json -w '%{http_code}' -H "Authorization: Bearer $CF_TOKEN" "$base/workers/scripts/limitless-expressions-api/settings")
+          if [[ "$status" != "200" ]]; then echo "::error::LIVE Worker settings HTTP $status"; exit 1; fi
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const j=JSON.parse(fs.readFileSync('/tmp/settings.json','utf8'));
+          if(!j.success||!Array.isArray(j.result?.bindings)) throw Error('LIVE bindings not available');
+          const b=j.result.bindings;
+          const get=n=>b.find(x=>x.name===n);
+          const checks={
+            'Giveaway entry flag configured':!!get('GIVEAWAY_ENTRIES_ENABLED'),
+            'Rules approval flag configured':!!get('GIVEAWAY_RULES_APPROVED'),
+            'Turnstile public key configured':!!get('TURNSTILE_SITE_KEY'),
+            'Turnstile secret configured':!!get('TURNSTILE_SECRET_KEY'),
+            'Resend API key configured':!!get('RESEND_API_KEY'),
+            'Giveaway sender configured':!!(get('GIVEAWAY_RESEND_FROM')||get('RESEND_FROM')),
+            'Email verification flag configured':!!get('EMAIL_VERIFIED'),
+            'Public API origin configured':!!get('PUBLIC_API_ORIGIN'),
+            'Storefront origin configured':!!get('STOREFRONT_ORIGIN'),
+            'D1 DB binding configured':get('DB')?.type==='d1',
+          };
+          for(const [label,ok] of Object.entries(checks)) console.log((ok?'PRESENT':'MISSING')+' — '+label);
+          const db=get('DB');
+          if(!db?.id) throw Error('LIVE DB identity missing');
+          fs.writeFileSync('/tmp/live-db-id',db.id);
+          const flag=get('GIVEAWAY_ENTRIES_ENABLED');
+          console.log('Giveaway entries currently enabled: '+(flag?.type==='plain_text'?(flag.text==='true'?'YES':'NO'):'unknown'));
+          console.log('Rules approved flag currently enabled: '+(get('GIVEAWAY_RULES_APPROVED')?.type==='plain_text'?(get('GIVEAWAY_RULES_APPROVED').text==='true'?'YES':'NO'):'unknown'));
+          NODE
+          dbid=$(cat /tmp/live-db-id)
+          for table in giveaways giveaway_entries giveaway_draws; do
+            status=$(curl -sS -o "/tmp/schema-$table.json" -w '%{http_code}' -X POST -H "Authorization: Bearer $CF_TOKEN" -H "Content-Type: application/json" --data "{\"sql\":\"SELECT name FROM sqlite_master WHERE type='table' AND name='$table'\"}" "$base/d1/database/$dbid/query")
+            if [[ "$status" != "200" ]]; then
+              echo "::warning::D1 read-only schema check unavailable (HTTP $status); no database changes made."
+              break
+            fi
+            TABLE="$table" node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const table=process.env.TABLE;
+          const j=JSON.parse(fs.readFileSync('/tmp/schema-'+table+'.json','utf8'));
+          const rows=j.result?.flatMap(x=>x.results||[])||[];
+          console.log((j.success&&rows.some(x=>x.name===table)?'PRESENT':'MISSING')+' — LIVE D1 table '+table);
+          NODE
+          done
+          echo 'Read-only audit complete. No entries opened, data modified, or secrets printed.'
