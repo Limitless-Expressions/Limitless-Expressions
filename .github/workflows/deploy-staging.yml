@@ -2,6 +2,14 @@ name: Deploy Cloudflare staging
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-staging.yml'
+      - 'package.json'
+      - 'package-lock.json'
 
 permissions:
   contents: read
