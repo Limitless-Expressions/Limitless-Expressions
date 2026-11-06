@@ -1,0 +1,41 @@
+name: Audit staging configuration (read only)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compare existing staging bindings with repository config
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$CF_TOKEN" && test -n "$CF_ACCOUNT"
+          curl --fail-with-body -sS -H "Authorization: Bearer $CF_TOKEN" "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/workers/scripts/limitless-expressions-api-staging/settings" > /tmp/staging-settings.json
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const remote=JSON.parse(fs.readFileSync('/tmp/staging-settings.json','utf8'));
+          const local=JSON.parse(fs.readFileSync('backend/wrangler.giveaway-staging.jsonc','utf8'));
+          if(!remote.success || !Array.isArray(remote.result?.bindings)) throw Error('Cannot read remote staging settings');
+          const bindings=remote.result.bindings;
+          const expected=new Map([
+            ...Object.keys(local.vars||{}).map(name=>[name,'plain_text']),
+            ...(local.d1_databases||[]).map(x=>[x.binding,'d1']),
+            ...(local.r2_buckets||[]).map(x=>[x.binding,'r2_bucket'])
+          ]);
+          console.log('Existing staging binding names and types (no values):');
+          for(const b of bindings) console.log(' - '+b.name+' ('+b.type+')');
+          console.log('Bindings missing from repository config:');
+          for(const b of bindings.filter(x=>!expected.has(x.name))) console.log(' - '+b.name+' ('+b.type+')');
+          console.log('Repository bindings not found remotely:');
+          for(const [name,type] of expected) if(!bindings.some(b=>b.name===name)) console.log(' - '+name+' ('+type+')');
+          console.log('Type differences:');
+          for(const b of bindings) if(expected.has(b.name)&&expected.get(b.name)!==b.type) console.log(' - '+b.name+': remote '+b.type+', local '+expected.get(b.name));
+          console.log('No remote values, secrets or tokens were printed. No changes made.');
+          NODE
