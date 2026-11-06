@@ -203,6 +203,24 @@ async function requireAdmin(request, env) {
   if (!configured(env.ADMIN_TOKEN) || env.ADMIN_TOKEN.length < 32 || !await equalSecrets(request.headers.get('Authorization'), `Bearer ${env.ADMIN_TOKEN}`))
     throw new HttpError(401, 'Administrator authentication required.');
 }
+async function giveawayEmailSmokeTest(env) {
+  if (!configured(env.RESEND_API_KEY)||!configured(env.RESEND_FROM)||!configured(env.NOTIFICATION_EMAIL)||env.EMAIL_VERIFIED!=='true')
+    throw new HttpError(503,'Email delivery configuration is incomplete.');
+  // Send only to the preconfigured owner inbox, never an arbitrary supplied address.
+  const sent=await fetch('https://api.resend.com/emails',{
+    method:'POST',
+    headers:{Authorization:'Bearer '+env.RESEND_API_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify({
+      from:env.GIVEAWAY_RESEND_FROM||env.RESEND_FROM,
+      to:[env.NOTIFICATION_EMAIL],
+      subject:'Giveaway #001 — email delivery test',
+      text:'This is a protected giveaway email delivery test. No entry was created, no verification token was issued, and the public giveaway remains closed.'
+    }),
+    signal:AbortSignal.timeout(15000)
+  });
+  if (!sent.ok) throw new HttpError(503,'Email provider rejected the test message.');
+  return json({sent:true,message:'Test email accepted by provider. Check your configured notification inbox; this does not verify delivery or create an entry.'});
+}
 async function giveawayDatabaseReadiness(env) {
   const names=['giveaways','giveaway_entries','giveaway_draws'];
   const result={};
@@ -256,6 +274,7 @@ export async function route(request, env) {
   if (path.startsWith('/api/admin/')) {
     await requireAdmin(request, env);
     if (path === '/api/admin/giveaway' && request.method === 'GET') return giveawayAdminSummary(env);
+    if (path === '/api/admin/giveaway/email-test' && request.method === 'POST') return giveawayEmailSmokeTest(env);
     if (path === '/api/admin/giveaway/readiness' && request.method === 'GET') return giveawayDatabaseReadiness(env);
     if (path === '/api/admin/giveaway/milestone' && request.method === 'POST') return giveawayMilestoneReached(env);
     if (path === '/api/admin/giveaway/activate' && request.method === 'POST') return giveawayActivate(env);
