@@ -1,0 +1,22 @@
+name: Inspect staging D1 bindings
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: List D1 databases and staging Worker bindings
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CF_TOKEN" && test -n "$CF_ACCOUNT"
+          api() { curl --fail-with-body -sS -H "Authorization: Bearer $CF_TOKEN" "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/$1"; }
+          echo "D1 databases:"
+          api "d1/database?per_page=100" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{let j=JSON.parse(s);if(!j.success){console.error("D1 listing denied; grant D1 Read permission");process.exit(1)}for(let d of j.result||[])console.log(d.name+" : "+d.uuid)})'
+          echo "Existing staging Worker bindings:"
+          api "workers/scripts/limitless-expressions-api-staging/settings" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{let j=JSON.parse(s);if(!j.success){console.error("Worker settings access denied");process.exit(1)}for(let b of j.result?.bindings||[])console.log(b.name+" ("+b.type+")"+(b.type==="d1"?" : "+(b.id||"unknown"):""))})'
+          echo "Read only. No deployment."
