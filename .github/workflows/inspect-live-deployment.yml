@@ -1,0 +1,41 @@
+name: Inspect live deployment configuration
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Inspect production Worker metadata (read only)
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$CF_TOKEN" && test -n "$CF_ACCOUNT"
+          base="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT"
+          api() { curl --fail-with-body -sS -H "Authorization: Bearer $CF_TOKEN" "$base/$1"; }
+          api "workers/scripts/limitless-expressions-api/settings" > /tmp/prod-settings.json
+          api "workers/scripts/limitless-expressions-api/schedules" > /tmp/prod-crons.json
+          api "pages/projects" > /tmp/pages-projects.json
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const read=p=>JSON.parse(fs.readFileSync(p,'utf8'));
+          const settings=read('/tmp/prod-settings.json'), crons=read('/tmp/prod-crons.json'), pages=read('/tmp/pages-projects.json');
+          if(!settings.success||!Array.isArray(settings.result?.bindings)) throw Error('Unable to inspect live Worker bindings');
+          console.log('LIVE WORKER BINDING NAMES AND TYPES (no values):');
+          for(const b of settings.result.bindings) {
+            const suffix=b.type==='d1'?' D1 ID='+b.id:b.type==='r2_bucket'?' R2 bucket='+b.bucket_name:'';
+            console.log(b.name+' ('+b.type+')'+suffix);
+          }
+          console.log('LIVE WORKER CRON SCHEDULES:');
+          if(!crons.success||!Array.isArray(crons.result?.schedules)) throw Error('Unable to inspect live cron schedules');
+          for(const x of crons.result.schedules) console.log(x.cron);
+          console.log('CLOUDFLARE PAGES PROJECTS (names and production branches only):');
+          if(!pages.success||!Array.isArray(pages.result)) throw Error('Unable to inspect Pages projects');
+          for(const p of pages.result) console.log(p.name+' | production branch: '+(p.production_branch||'unknown'));
+          console.log('Inspection complete. No Worker, Pages, database or secret changed.');
+          NODE
