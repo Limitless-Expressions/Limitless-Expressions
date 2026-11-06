@@ -20,7 +20,7 @@ export async function giveawayActivate(env) {
 
 export async function giveawayMilestoneReached(env) {
  const now=Date.now(),closeAt=now+86400000;
- const result=await env.DB.prepare("UPDATE giveaways SET closes_at=? WHERE id='001' AND status='open' AND closes_at>? AND closes_at>?").bind(closeAt,closeAt,now).run();
+ const result=await env.DB.prepare("UPDATE giveaways SET closes_at=? WHERE id='001' AND status='open' AND closes_at-opens_at>=? AND closes_at>?").bind(360*86400000,now).run();
  if(!result.meta.changes) throw new HttpError(409,'Giveaway is not open, the milestone is already recorded, or the deadline is sooner.');
  return json({status:'open',milestoneReached:true,closesAt:closeAt});
 }

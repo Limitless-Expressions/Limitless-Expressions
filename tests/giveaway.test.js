@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {entryStatus,submitEntry} from '../backend/src/giveaway-entries.js';
-import {giveawayActivate} from '../backend/src/giveaways.js';
+import {giveawayActivate,giveawayMilestoneReached} from '../backend/src/giveaways.js';
 import {closeGiveaway,drawGiveaway} from '../backend/src/giveaway-draw.js';
 
 const db = row => ({prepare: () => ({bind: () => ({first:async()=>row})})});
@@ -38,4 +38,20 @@ test('draw refuses a second draw',async()=>{
   run:async()=>({meta:{changes:0}})
  })})}};
  await assert.rejects(drawGiveaway(env),error=>error.status===409);
+});
+
+test('milestone records a 24-hour deadline with one-time guard',async()=>{
+ let sql='',params=[];
+ const env={DB:{prepare:query=>{sql=query;return {bind:(...values)=>{params=values;return {run:async()=>({meta:{changes:1}})}}}}}};
+ const response=await giveawayMilestoneReached(env);
+ const result=await response.json();
+ assert.equal(result.milestoneReached,true);
+ assert.match(sql,/closes_at-opens_at>=\?/);
+ assert.equal(params[0],360*86400000);
+ assert.ok(result.closesAt>Date.now()+23*3600000);
+ assert.ok(result.closesAt<Date.now()+25*3600000);
+});
+test('milestone cannot be confirmed again after update guard rejects it',async()=>{
+ const env={DB:{prepare:()=>({bind:()=>({run:async()=>({meta:{changes:0}})})})}};
+ await assert.rejects(giveawayMilestoneReached(env),error=>error.status===409);
 });
