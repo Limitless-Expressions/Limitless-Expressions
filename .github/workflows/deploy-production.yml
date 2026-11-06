@@ -1,0 +1,72 @@
+name: Deploy LIVE Cloudflare Worker
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-production.yml'
+      - 'package.json'
+      - 'package-lock.json'
+permissions:
+  contents: read
+concurrency:
+  group: cloudflare-live-worker
+  cancel-in-progress: false
+jobs:
+  deploy:
+    name: Test and deploy LIVE Worker
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Run automated tests
+        run: npm test
+      - name: Inspect and protect LIVE resource bindings
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN" && test -n "$CLOUDFLARE_ACCOUNT_ID"
+          base="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/limitless-expressions-api"
+          curl --fail-with-body -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "$base/settings" > /tmp/live-settings.json
+          curl --fail-with-body -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "$base/schedules" > /tmp/live-crons.json
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const settings=JSON.parse(fs.readFileSync('/tmp/live-settings.json','utf8'));
+          const schedules=JSON.parse(fs.readFileSync('/tmp/live-crons.json','utf8'));
+          const fail=m=>{console.error('::error::'+m);process.exit(1)};
+          if(!settings.success||!Array.isArray(settings.result?.bindings)) fail('Cannot inspect LIVE bindings');
+          if(!schedules.success||!Array.isArray(schedules.result?.schedules)) fail('Cannot inspect LIVE schedules');
+          const bindings=settings.result.bindings;
+          const d1=bindings.filter(b=>b.type==='d1');
+          const r2=bindings.filter(b=>b.type==='r2_bucket');
+          if(d1.length!==1||d1[0].name!=='DB'||!d1[0].id) fail('Unexpected LIVE D1 bindings');
+          if(r2.length!==1||r2[0].name!=='ARTWORK'||!r2[0].bucket_name) fail('Unexpected LIVE R2 bindings');
+          const unsupported=bindings.filter(b=>!['d1','r2_bucket','secret_text','plain_text'].includes(b.type));
+          if(unsupported.length) fail('Unsupported LIVE binding types: '+unsupported.map(b=>b.type).join(','));
+          const crons=schedules.result.schedules.map(x=>x.cron);
+          if(JSON.stringify(crons)!==JSON.stringify(['*/5 * * * *'])) fail('Unexpected LIVE cron schedule');
+          const cfg={
+            $schema:'node_modules/wrangler/config-schema.json',
+            name:'limitless-expressions-api',
+            main:'src/worker.js',
+            compatibility_date:'2026-10-01',
+            d1_databases:[{binding:'DB',database_name:'live-orders',database_id:d1[0].id,migrations_dir:'migrations'}],
+            r2_buckets:[{binding:'ARTWORK',bucket_name:r2[0].bucket_name}],
+            triggers:{crons}
+          };
+          fs.writeFileSync('backend/wrangler.production.generated.json',JSON.stringify(cfg,null,2));
+          console.log('Verified existing LIVE DB, R2, cron and supported binding types; no secret values logged.');
+          NODE
+      - name: Deploy to LIVE Worker (preserve existing variables and secrets)
+        working-directory: backend
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@4 deploy --keep-vars --config wrangler.production.generated.json
