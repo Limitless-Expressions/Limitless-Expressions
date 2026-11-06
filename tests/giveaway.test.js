@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {entryStatus,submitEntry} from '../backend/src/giveaway-entries.js';
 import {giveawayActivate,giveawayMilestoneReached} from '../backend/src/giveaways.js';
+import {confirmGiveawayEmail} from '../backend/src/giveaway-verification.js';
 import {closeGiveaway,drawGiveaway} from '../backend/src/giveaway-draw.js';
 
 const db = row => ({prepare: () => ({bind: () => ({first:async()=>row})})});
@@ -54,4 +55,46 @@ test('milestone records a 24-hour deadline with one-time guard',async()=>{
 test('milestone cannot be confirmed again after update guard rejects it',async()=>{
  const env={DB:{prepare:()=>({bind:()=>({run:async()=>({meta:{changes:0}})})})}};
  await assert.rejects(giveawayMilestoneReached(env),error=>error.status===409);
+});
+
+test('email confirmation rejects disabled entries without modifying database',async()=>{
+ let updated=false;
+ const env={GIVEAWAY_ENTRIES_ENABLED:'false',DB:{prepare:sql=>({bind:()=>({first:async()=>({status:'open'}),run:async()=>{updated=true;return {meta:{changes:1}}}})})}};
+ const token='a'.repeat(72);
+ await assert.rejects(confirmGiveawayEmail(new Request('https://api.example.com/api/giveaway/verify?token='+token),env),error=>error.status===409);
+ assert.equal(updated,false);
+});
+test('email confirmation rejects malformed links',async()=>{
+ await assert.rejects(confirmGiveawayEmail(new Request('https://api.example.com/api/giveaway/verify?token=bad'),{}),error=>error.status===400);
+});
+test('email confirmation accepts an unexpired token once',async()=>{
+ const token='a'.repeat(72);let updateCalls=0,params;
+ const env={GIVEAWAY_ENTRIES_ENABLED:'true',DB:{prepare:sql=>({bind:(...values)=>({
+  first:async()=>({status:'open',closes_at:Date.now()+86400000}),
+  run:async()=>{updateCalls++;params=values;return {meta:{changes:updateCalls===1?1:0}}}
+ })})}};
+ const url='https://api.example.com/api/giveaway/verify?token='+token;
+ const response=await confirmGiveawayEmail(new Request(url),env);
+ assert.equal(response.status,200);
+ assert.match(await response.text(),/confirmed/i);
+ assert.equal(params[1],'001');
+ assert.equal(params[2].length,64);
+ await assert.rejects(confirmGiveawayEmail(new Request(url),env),error=>error.status===400);
+});
+test('email confirmation accepts pending verification after entries close',async()=>{
+ const token='b'.repeat(72);
+ const env={GIVEAWAY_ENTRIES_ENABLED:'true',DB:{prepare:()=>({bind:()=>({
+  first:async()=>({status:'closed',closes_at:Date.now()-1000}),
+  run:async()=>({meta:{changes:1}})
+ })})}};
+ const response=await confirmGiveawayEmail(new Request('https://api.example.com/api/giveaway/verify?token='+token),env);
+ assert.equal(response.status,200);
+});
+test('email confirmation rejects expired or already-used tokens',async()=>{
+ const token='c'.repeat(72);
+ const env={GIVEAWAY_ENTRIES_ENABLED:'true',DB:{prepare:()=>({bind:()=>({
+  first:async()=>({status:'open'}),
+  run:async()=>({meta:{changes:0}})
+ })})}};
+ await assert.rejects(confirmGiveawayEmail(new Request('https://api.example.com/api/giveaway/verify?token='+token),env),error=>error.status===400);
 });
