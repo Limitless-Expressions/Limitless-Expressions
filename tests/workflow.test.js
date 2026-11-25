@@ -72,7 +72,7 @@ test('storefront catalog, product data and checkout integrations are preserved',
   assert.doesNotMatch(source, /<button class="customize"/);
   assert.match(source, /<script src="order-config.js"><\/script><script src="order-workflow.js"><\/script>/);
   const extracted = vm.runInNewContext(original.slice(original.indexOf('const products='),original.indexOf('function galleryHTML'))+';products');
-  assert.equal(catalog.length,11);
+  assert.equal(catalog.length,12);
   // Photos and storefront display prices are presentation data; checkout prices remain server-owned.\n  const storefront=JSON.parse(JSON.stringify(extracted));\n  assert.deepEqual(storefront.map(({name,fields,comingSoon})=>({name,fields,comingSoon:!!comingSoon})),catalog.map(({name,fields,comingSoon})=>({name,fields,comingSoon:!!comingSoon})));\n  assert.ok(storefront[0].images[0].includes('limitless-expressions-hype-chain.webp'));
   const config = readFileSync(new URL('../order-config.js',import.meta.url),'utf8');
   assert.match(config,/enabled: true/); assert.match(config,/allowLiveCheckout: true/);

@@ -8,7 +8,8 @@ export const catalog = [
       "images/product-01-180512bcfc.jpg",
       "images/hype-chain-huss-02.jpg",
       "images/hype-chain-duncanville-01.jpg",
-      "images/hype-chain-duncanville-02.jpg"
+      "images/hype-chain-duncanville-02.jpg",
+      "images/purr-hype-chain.webp"
     ],
     "imageAlts": [
       "Huss Auto Detailing custom hype chain example"
@@ -35,7 +36,9 @@ export const catalog = [
       "images/Top Notch NFC first layer on plate.jpeg",
       "images/Top Notch NFC showing.jpeg",
       "images/Top Notch NFC single.jpeg",
-      "images/Broom NFC Tags.jpeg"
+      "images/Broom NFC Tags.jpeg",
+      "images/crown-nfc-keychain.webp",
+      "images/nfc-production.webp"
     ],
     "imageAlts": [
       "NFC keytag being 3D printed",
@@ -181,6 +184,17 @@ export const catalog = [
       "images/Brownie 3D.jpeg"
     ],
     "desc": "Upload a photo of your dog",
+    "price": "Coming Soon",
+    "comingSoon": true,
+    "fields": []
+  },
+  {
+    "name": "Custom Chibi Figurines",
+    "tag": "COMING SOON",
+    "images": [
+      "images/custom-chibi.webp"
+    ],
+    "desc": "Turn yourself, a friend, or a loved one into a personalized 3D-printed chibi figurine.",
     "price": "Coming Soon",
     "comingSoon": true,
     "fields": []
